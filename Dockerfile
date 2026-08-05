@@ -30,7 +30,9 @@ RUN mkdir -p /app/data
 
 EXPOSE 8787
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:8787/api/auth/me 2>&1 | grep -q . || exit 1
+# Traefik не маршрутизує unhealthy-контейнери, тож перевірка має бити
+# в ендпоінт, що віддає 200 (а не 401, як захищені маршрути).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -q --spider http://127.0.0.1:8787/api/health || exit 1
 
 CMD ["node", "dist-server/main.js"]
