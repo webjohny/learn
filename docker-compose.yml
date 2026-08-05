@@ -1,3 +1,6 @@
+# version потрібен для docker-compose 1.29, який стоїть на сервері.
+version: '3.8'
+
 services:
   learn:
     build: .
