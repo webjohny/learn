@@ -2,7 +2,7 @@ node_modules
 dist
 dist-server
 dist-ssr
-data
+/data
 *.local
 .vite
 .DS_Store
