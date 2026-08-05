@@ -1,0 +1,29 @@
+services:
+  learn:
+    build: .
+    container_name: learn
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8787
+      DB_PATH: /app/data/phrase-deck.sqlite
+    volumes:
+      - learn_data:/app/data
+    networks:
+      - cashcome
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=cashcome
+      - traefik.http.routers.learn.rule=Host(`learn.cash-come.com`)
+      - traefik.http.routers.learn.entrypoints=websecure
+      - traefik.http.routers.learn.tls=true
+      - traefik.http.routers.learn.tls.certresolver=le
+      - traefik.http.services.learn.loadbalancer.server.port=8787
+
+volumes:
+  learn_data:
+
+# Мережа, у якій уже живе traefik — створена поза цим стеком.
+networks:
+  cashcome:
+    external: true
