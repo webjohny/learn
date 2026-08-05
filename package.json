@@ -1,0 +1,48 @@
+{
+  "name": "english-anki",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n web,api -c cyan,magenta \"vite\" \"npm:dev:server\"",
+    "dev:web": "vite",
+    "dev:server": "nest start --watch",
+    "build": "npm run build:web && npm run build:server",
+    "build:web": "tsc -b && vite build",
+    "build:server": "nest build",
+    "start": "node dist-server/main.js",
+    "preview": "vite preview",
+    "test:api": "node server/test/smoke.mjs",
+    "typecheck": "tsc -b --noEmit && tsc -p server --noEmit"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.28",
+    "@nestjs/core": "^11.1.28",
+    "@nestjs/platform-express": "^11.1.28",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "cookie-parser": "^1.4.7",
+    "framer-motion": "^11.15.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.24",
+    "@nestjs/testing": "^11.1.28",
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^10.0.4",
+    "tailwindcss": "^4.0.0",
+    "tsx": "^4.23.8",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  }
+}

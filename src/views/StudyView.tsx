@@ -1,0 +1,342 @@
+import { AnimatePresence, motion } from 'framer-motion'
+import { useCallback, useEffect, useState } from 'react'
+
+import { CardEditor } from '@/components/CardEditor'
+import { Flashcard } from '@/components/Flashcard'
+import { RatingBar } from '@/components/RatingBar'
+import { Icon, type IconName } from '@/components/ui/Icon'
+import { useHaptics, useIsTouch } from '@/hooks/useMisc'
+import { useHotkeys } from '@/hooks/useHotkeys'
+import { useStudySession } from '@/hooks/useStudySession'
+import { formatDuration } from '@/lib/date'
+import { speak, ttsSupported } from '@/lib/tts'
+import { useCounts } from '@/store/selectors'
+import { useDeck } from '@/store/useDeck'
+import { useOverlayOpen } from '@/store/useOverlay'
+import { useSession } from '@/store/useSession'
+import type { Grade, StudyMode } from '@/types'
+import { TypeInPanel } from './TypeInPanel'
+
+const MODES: { key: StudyMode; label: string; icon: IconName; hint: string }[] = [
+  { key: 'srs', label: 'Інтервали', icon: 'cards', hint: 'SM-2: повторення за розкладом' },
+  { key: 'speed', label: 'Спринт', icon: 'zap', hint: 'Мікро-сесія на хвилину' },
+  { key: 'type', label: 'Друк', icon: 'pencilLine', hint: 'Активне пригадування — введіть фразу' },
+]
+
+export function StudyView() {
+  const [mode, setMode] = useState<StudyMode>('srs')
+  const [editorOpen, setEditorOpen] = useState(false)
+
+  const settings = useDeck((s) => s.settings)
+  const overlayOpen = useOverlayOpen()
+  const counts = useCounts()
+  const haptic = useHaptics()
+  const isTouch = useIsTouch()
+  const session = useStudySession(mode)
+  const { card, revealed, reveal, answer, restart, finished } = session
+
+  const deckMeta = useSession((s) => s.activeDeckMeta())
+  const targetLang = deckMeta?.targetLang ?? 'en-US'
+  const sourceLang = deckMeta?.sourceLang ?? 'uk'
+
+  const speakAnswer = useCallback(() => {
+    if (!card) return
+    speak(settings.reverse ? card.front : card.back, {
+      rate: settings.speechRate,
+      voiceURI: settings.voiceURI,
+      lang: settings.reverse ? sourceLang : targetLang,
+    })
+  }, [card, settings.reverse, settings.speechRate, settings.voiceURI, sourceLang, targetLang])
+
+  // Автоозвучення цільової мови одразу після перевороту.
+  useEffect(() => {
+    if (!revealed || !card || !settings.autoSpeak || settings.reverse) return
+    speak(card.back, {
+      rate: settings.speechRate,
+      voiceURI: settings.voiceURI,
+      lang: targetLang,
+    })
+  }, [
+    revealed,
+    card,
+    settings.autoSpeak,
+    settings.reverse,
+    settings.speechRate,
+    settings.voiceURI,
+    targetLang,
+  ])
+
+  const flip = useCallback(() => {
+    if (revealed) return
+    haptic(8)
+    reveal()
+  }, [haptic, reveal, revealed])
+
+  const rate = useCallback(
+    (grade: Grade) => {
+      if (!revealed) return
+      haptic(grade === 0 ? [12, 40, 12] : 14)
+      answer(grade)
+    },
+    [answer, haptic, revealed],
+  )
+
+  useHotkeys(
+    {
+      ' ': () => (revealed ? undefined : flip()),
+      enter: () => (revealed ? rate(2) : flip()),
+      '1': () => rate(0),
+      '2': () => rate(1),
+      '3': () => rate(2),
+      '4': () => rate(3),
+      arrowleft: () => rate(0),
+      arrowright: () => rate(2),
+      arrowup: () => rate(3),
+      arrowdown: () => rate(1),
+      s: () => speakAnswer(),
+      e: () => card && setEditorOpen(true),
+    },
+    // У режимі «Друк» клавіші вмикаються лише після перевірки — до того фокус у полі вводу.
+    Boolean(card) && !overlayOpen && (mode !== 'type' || revealed),
+  )
+
+  const timeLeft = session.timeLeftMs
+  const speedProgress =
+    mode === 'speed' && timeLeft !== null ? timeLeft / (settings.speedSessionSeconds * 1000) : null
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <div className="flex flex-1 gap-1 rounded-xl bg-ink-900/5 p-1 dark:bg-white/6">
+          {MODES.map((item) => (
+            <button
+              key={item.key}
+              onClick={() => setMode(item.key)}
+              title={item.hint}
+              className={`btn flex-1 gap-1.5 py-1.5 text-[13px] ${
+                mode === item.key
+                  ? 'bg-white text-ink-900 shadow-sm dark:bg-white/12 dark:text-white'
+                  : 'text-ink-500 dark:text-ink-400'
+              }`}
+            >
+              <Icon name={item.icon} size={15} />
+              {item.label}
+            </button>
+          ))}
+        </div>
+        {card && (
+          <button
+            className="btn-ghost px-2"
+            onClick={() => setEditorOpen(true)}
+            title="Редагувати картку (E)"
+          >
+            <Icon name="edit" size={17} />
+          </button>
+        )}
+      </div>
+
+      {speedProgress !== null ? (
+        <ProgressBar value={speedProgress} tone="amber" label={`${Math.ceil((timeLeft ?? 0) / 1000)} с`} />
+      ) : (
+        <ProgressBar
+          value={session.progress}
+          tone="brand"
+          label={`${session.total - session.remaining} / ${session.total}`}
+        />
+      )}
+
+      <AnimatePresence mode="wait">
+        {card ? (
+          <motion.div
+            key="card"
+            className="flex min-h-0 flex-1 flex-col gap-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="min-h-[46dvh] flex-1">
+              <Flashcard
+                card={card}
+                revealed={revealed}
+                onFlip={flip}
+                onSwipe={rate}
+                swipeEnabled={revealed && isTouch}
+                reverse={settings.reverse}
+                clozeBlur={settings.clozeBlur}
+                onSpeak={speakAnswer}
+                hideAnswerText={mode === 'type' && !revealed}
+              />
+            </div>
+
+            {mode === 'type' ? (
+              <TypeInPanel
+                key={card.id}
+                card={card}
+                revealed={revealed}
+                onReveal={reveal}
+                onRate={rate}
+                reverse={settings.reverse}
+              />
+            ) : !revealed ? (
+              <button className="btn-primary w-full py-3 text-base" onClick={flip}>
+                Показати відповідь
+                <span className="kbd ml-1 hidden border-white/25 bg-white/15 text-white sm:inline-flex">
+                  Space
+                </span>
+              </button>
+            ) : mode === 'speed' ? (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  className="btn border border-rose-500/25 bg-rose-500/10 py-3.5 text-base font-semibold text-rose-600 dark:text-rose-300"
+                  onClick={() => rate(0)}
+                >
+                  Не знав
+                </button>
+                <button
+                  className="btn border border-emerald-500/25 bg-emerald-500/10 py-3.5 text-base font-semibold text-emerald-600 dark:text-emerald-300"
+                  onClick={() => rate(2)}
+                >
+                  Знав
+                </button>
+              </div>
+            ) : (
+              <RatingBar card={card} onRate={rate} />
+            )}
+          </motion.div>
+        ) : (
+          <SessionDone
+            key="done"
+            mode={mode}
+            stats={session.stats}
+            queued={counts.queued}
+            onRestart={restart}
+            onSwitchMode={setMode}
+            finished={finished}
+          />
+        )}
+      </AnimatePresence>
+
+      {ttsSupported && card && revealed && !settings.autoSpeak && (
+        <p className="text-center text-[11px] text-ink-400">
+          <span className="kbd">S</span> — прослухати вимову
+        </p>
+      )}
+
+      <CardEditor open={editorOpen} card={card ?? null} onClose={() => setEditorOpen(false)} />
+    </div>
+  )
+}
+
+function ProgressBar({
+  value,
+  label,
+  tone,
+}: {
+  value: number
+  label: string
+  tone: 'brand' | 'amber'
+}) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink-900/8 dark:bg-white/8">
+        <motion.div
+          className={`h-full rounded-full ${tone === 'brand' ? 'bg-brand-500' : 'bg-amber-500'}`}
+          animate={{ width: `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%` }}
+          transition={{ duration: 0.3 }}
+        />
+      </div>
+      <span className="text-[11px] font-medium tabular-nums text-ink-400">{label}</span>
+    </div>
+  )
+}
+
+function SessionDone({
+  mode,
+  stats,
+  queued,
+  onRestart,
+  onSwitchMode,
+  finished,
+}: {
+  mode: StudyMode
+  stats: { answered: number; correct: number; again: number; elapsedMs: number }
+  queued: number
+  onRestart: () => void
+  onSwitchMode: (mode: StudyMode) => void
+  finished: boolean
+}) {
+  const accuracy = stats.answered ? Math.round((stats.correct / stats.answered) * 100) : 0
+  const nothingToDo = stats.answered === 0 && finished
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      className="surface flex flex-1 flex-col items-center justify-center gap-5 p-8 text-center"
+    >
+      <span className="grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-sky-500 text-white shadow-lg shadow-brand-500/25">
+        <Icon name={nothingToDo ? 'check' : 'award'} size={26} />
+      </span>
+
+      <div className="space-y-1.5">
+        <h2 className="text-xl font-semibold">
+          {nothingToDo ? 'На сьогодні все повторено 🎉' : 'Сесію завершено!'}
+        </h2>
+        <p className="max-w-sm text-sm text-ink-500 dark:text-ink-400">
+          {nothingToDo
+            ? queued > 0
+              ? 'Ліміт на сьогодні вичерпано. Можна пройти швидкий спринт для розігріву.'
+              : 'Наступні картки з’являться, щойно настане час повторення.'
+            : `${stats.answered} карток за ${formatDuration(stats.elapsedMs / 1000)}.`}
+        </p>
+      </div>
+
+      {stats.answered > 0 && (
+        <div className="grid w-full max-w-sm grid-cols-3 gap-2">
+          <Metric value={stats.answered} label="карток" />
+          <Metric value={`${accuracy}%`} label="точність" tone="emerald" />
+          <Metric value={stats.again} label="забув" tone="rose" />
+        </div>
+      )}
+
+      <div className="flex flex-wrap justify-center gap-2">
+        <button className="btn-primary" onClick={onRestart}>
+          <Icon name="rotate" size={16} /> Ще раз
+        </button>
+        {mode !== 'speed' && (
+          <button className="btn-soft" onClick={() => onSwitchMode('speed')}>
+            <Icon name="zap" size={16} /> Спринт на хвилину
+          </button>
+        )}
+        {mode === 'speed' && (
+          <button className="btn-soft" onClick={() => onSwitchMode('srs')}>
+            <Icon name="cards" size={16} /> До інтервалів
+          </button>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+function Metric({
+  value,
+  label,
+  tone = 'default',
+}: {
+  value: string | number
+  label: string
+  tone?: 'default' | 'emerald' | 'rose'
+}) {
+  const colors = {
+    default: 'text-ink-900 dark:text-white',
+    emerald: 'text-emerald-600 dark:text-emerald-400',
+    rose: 'text-rose-600 dark:text-rose-400',
+  }
+  return (
+    <div className="rounded-xl bg-ink-900/4 px-3 py-2.5 dark:bg-white/6">
+      <div className={`text-lg font-semibold tabular-nums ${colors[tone]}`}>{value}</div>
+      <div className="text-[11px] text-ink-400">{label}</div>
+    </div>
+  )
+}

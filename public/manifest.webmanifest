@@ -1,0 +1,19 @@
+{
+  "name": "Phrase Deck — розмовна англійська",
+  "short_name": "Phrase Deck",
+  "description": "Флеш-картки для мікро-навчання розмовної англійської.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b0f17",
+  "theme_color": "#0b0f17",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

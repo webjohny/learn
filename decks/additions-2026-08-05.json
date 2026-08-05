@@ -1,0 +1,112 @@
+[
+  {
+    "category": "Morning & Coffee",
+    "front": "Все чудово! Тільки починаю день, відчайдушно потребую кави.",
+    "back": "Doing well! Just starting my day, *[desperately in need of]* a caffeine hit.",
+    "tags": ["casual", "morning"],
+    "difficulty": "medium",
+    "note": "caffeine hit — «доза кави»; більш розмовно, ніж cup of coffee."
+  },
+  {
+    "category": "Morning & Coffee",
+    "front": "Не скаржуся! Потихеньку вкочуююся в робочий день. Як справи у тебе?",
+    "back": "*[Can't complain]*! Just *[easing into]* the workday. How are things *[on your end]*?",
+    "tags": ["casual", "morning", "smalltalk"],
+    "difficulty": "hard",
+    "note": "ease into — поступово вкочуватися; on your end — «у тебе», «з твого боку»."
+  },
+  {
+    "category": "Morning & Coffee",
+    "front": "Все по-старому. Намагаюся прокинутися за допомогою гарної чашки кави.",
+    "back": "*[Same old, same old]*. Just trying to wake up with *[a solid cup of]* coffee.",
+    "tags": ["casual", "morning"],
+    "difficulty": "medium",
+    "note": "solid тут = «нормальний, як треба», а не «твердий»."
+  },
+  {
+    "category": "Family & Personal",
+    "front": "У неї все чудово! Ми зараз на стадії «пре-релізу» — закуповуємо дитяче спорядження перед великим запуском!",
+    "back": "She's doing great! We're basically in the 'pre-release' phase right now — *[stocking up on]* all the baby gear before the big launch!",
+    "tags": ["casual", "family", "it-humor"],
+    "difficulty": "hard",
+    "note": "stock up on — робити запас; baby gear — дитяче приладдя."
+  },
+  {
+    "category": "Family & Personal",
+    "front": "Все чудово! Просто рахуємо дні до пологів і намагаємося все підготувати.",
+    "back": "She's doing really well, thanks for asking! We're just *[counting down the days]* until the *[due date]* and trying to get everything prepped.",
+    "tags": ["casual", "family"],
+    "difficulty": "medium",
+    "note": "due date — очікувана дата пологів (а також дедлайн у роботі)."
+  },
+  {
+    "category": "Family & Personal",
+    "front": "Ми зараз повністю в режимі підготовки до малюка, купуємо купу речей.",
+    "back": "We're fully in *[baby-prep mode]* right now, buying *[endless]* stuff and getting everything ready.",
+    "tags": ["casual", "family"],
+    "difficulty": "easy"
+  },
+  {
+    "category": "Weekend & Plans",
+    "front": "Були досить спокійні вихідні! Просто відпочили з дружиною і подивилися кілька фільмів.",
+    "back": "It was pretty *[low-key]*! Just *[kicked back]* with my wife and *[binge-watched]* a few movies.",
+    "tags": ["casual", "weekend"],
+    "difficulty": "medium",
+    "note": "low-key — спокійний, без метушні; binge-watch — дивитися запоєм."
+  },
+  {
+    "category": "Weekend & Plans",
+    "front": "Чесно кажучи, були суперліниві вихідні. Ми з дружиною просто «відключилися» від усього і відпочили.",
+    "back": "Honestly, it was super lazy. My wife and I just *[unplugged]*, *[took it easy]*, and *[caught up on]* some movies.",
+    "tags": ["casual", "weekend"],
+    "difficulty": "hard",
+    "note": "unplug — відключитися від справ/гаджетів; take it easy — не напрягатися."
+  },
+  {
+    "category": "Weekend & Plans",
+    "front": "Як пройшли вихідні? Робив щось цікаве?",
+    "back": "How was your weekend? Did you *[get up to]* anything interesting?",
+    "tags": ["casual", "weekend", "smalltalk"],
+    "difficulty": "medium",
+    "note": "Простіший варіант: Did you do anything fun?"
+  },
+  {
+    "category": "Weekend & Plans",
+    "front": "Є якісь цікаві плани на вихідні?",
+    "back": "Got any *[fun plans]* for the *[upcoming]* weekend?",
+    "tags": ["casual", "weekend", "smalltalk"],
+    "difficulty": "easy",
+    "note": "Розмовне «Got any…?» = «Do you have any…?». nice/fun тут взаємозамінні."
+  },
+  {
+    "category": "Work & Communication",
+    "front": "Досить зайнятий, намагаюся розгребти свої задачі. А ти як?",
+    "back": "Pretty busy *[on my end]*, just trying to *[clear my backlog]*. How about you?",
+    "tags": ["work", "work-slack", "smalltalk"],
+    "difficulty": "medium"
+  },
+  {
+    "category": "Work & Communication",
+    "front": "Є щось цікаве у твоїх робочих планах на сьогодні?",
+    "back": "Anything exciting *[on your plate]* today?",
+    "tags": ["work", "smalltalk"],
+    "difficulty": "hard",
+    "note": "on your plate — «у планах», «в роботі». Also: I have a lot on my plate."
+  },
+  {
+    "category": "Work & Communication",
+    "front": "Спишемося щодо цього пізніше.",
+    "back": "Let's *[touch base]* on this later.",
+    "tags": ["work", "work-slack"],
+    "difficulty": "hard",
+    "note": "touch base — коротко звіритися, синхронізуватися."
+  },
+  {
+    "category": "Small Talk",
+    "front": "Звучить круто! І як давно ти цим займаєшся?",
+    "back": "Sounds awesome! *[How long have you been]* doing that?",
+    "tags": ["casual", "smalltalk"],
+    "difficulty": "medium",
+    "note": "Present Perfect Continuous — дія почалася в минулому й триває."
+  }
+]
