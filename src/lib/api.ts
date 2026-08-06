@@ -1,4 +1,5 @@
 import type {
+  DeckKind,
   DeckMeta,
   PublicUser,
   SyncCard,
@@ -6,7 +7,20 @@ import type {
   SyncPullResponse,
 } from '@server/types'
 
-export type { DeckMeta, PublicUser, SyncCard, SyncDayStat, SyncPullResponse }
+import type { Quiz, QuizRun } from '@/lib/quizTypes'
+
+export type { DeckKind, DeckMeta, PublicUser, SyncCard, SyncDayStat, SyncPullResponse }
+
+export interface CreateDeckInput {
+  name: string
+  kind: DeckKind
+  /** Тільки для `kind: 'language'` */
+  sourceLang?: string
+  targetLang?: string
+}
+
+/** `kind` змінити не можна — предметна колода не має мов. */
+export type UpdateDeckInput = Partial<Omit<CreateDeckInput, 'kind'>>
 
 export class ApiError extends Error {
   constructor(
@@ -75,10 +89,10 @@ export const api = {
 
   listDecks: () => request<{ decks: DeckMeta[] }>('GET', '/api/decks'),
 
-  createDeck: (input: { name: string; sourceLang: string; targetLang: string }) =>
+  createDeck: (input: CreateDeckInput) =>
     request<{ deck: DeckMeta }>('POST', '/api/decks', input),
 
-  updateDeck: (id: string, input: Partial<{ name: string; sourceLang: string; targetLang: string }>) =>
+  updateDeck: (id: string, input: UpdateDeckInput) =>
     request<{ deck: DeckMeta }>('PATCH', `/api/decks/${id}`, input),
 
   deleteDeck: (id: string) => request<void>('DELETE', `/api/decks/${id}`),
@@ -95,4 +109,21 @@ export const api = {
       `/api/sync/${deckId}`,
       payload,
     ),
+}
+
+/** Окремий контур: вікторини належать акаунту, а не колоді. */
+export const quizApi = {
+  pull: (since?: string | null) =>
+    request<{ serverTime: string; quizzes: Quiz[]; runs: QuizRun[] }>(
+      'GET',
+      `/api/quiz${since ? `?since=${encodeURIComponent(since)}` : ''}`,
+    ),
+
+  push: (payload: { quizzes?: Quiz[]; runs?: QuizRun[] }) =>
+    request<{
+      serverTime: string
+      appliedQuizzes: number
+      skippedQuizzes: number
+      appliedRuns: number
+    }>('POST', '/api/quiz', payload),
 }

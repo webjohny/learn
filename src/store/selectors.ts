@@ -1,15 +1,49 @@
 import { useMemo } from 'react'
 
+import type { DeckKind } from '@/lib/api'
 import { calcStreak, dayKey } from '@/lib/date'
 import { isDue, isNew } from '@/lib/sm2'
 import type { Card, DayStat, ReviewLogEntry } from '@/types'
 import { emptyDeckData, useDeck, type DeckData } from './useDeck'
+import { useSession } from './useSession'
 
 /** Дані активної колоди. Видалені картки сюди не потрапляють. */
 export function useDeckData(): DeckData {
   const activeDeckId = useDeck((s) => s.activeDeckId)
   const decks = useDeck((s) => s.decks)
   return decks[activeDeckId] ?? emptyDeckData()
+}
+
+export interface DeckProfile {
+  kind: DeckKind
+  /** Мовна пара: доступні TTS, зворотний напрям і режим «Друк». */
+  isLanguage: boolean
+  /** Мова питання; для предметної колоди — мова інтерфейсу. */
+  sourceLang: string
+  /** Мова відповіді (голос TTS). */
+  targetLang: string
+}
+
+/**
+ * Тип активної колоди. Гість працює з локальною колодою без метаданих —
+ * для нього це мовна пара 🇺🇦 → 🇺🇸, як і було до появи предметних колод.
+ */
+export function useDeckProfile(): DeckProfile {
+  // Підписуємось на обидва стори: id активної колоди живе в useDeck,
+  // а її метадані — в useSession.
+  const activeDeckId = useDeck((s) => s.activeDeckId)
+  const decks = useSession((s) => s.decks)
+  const meta = decks.find((d) => d.id === activeDeckId) ?? null
+  const kind = meta?.kind ?? 'language'
+  return useMemo(
+    () => ({
+      kind,
+      isLanguage: kind === 'language',
+      sourceLang: meta?.sourceLang ?? 'uk',
+      targetLang: meta?.targetLang ?? 'en-US',
+    }),
+    [kind, meta?.sourceLang, meta?.targetLang],
+  )
 }
 
 export function useCards(): Card[] {

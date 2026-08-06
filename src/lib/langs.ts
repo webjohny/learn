@@ -19,12 +19,14 @@ export const LANGUAGES: Language[] = [
   { code: 'pt-PT', label: 'Português', flag: '🇵🇹', speech: true },
   { code: 'nl-NL', label: 'Nederlands', flag: '🇳🇱', speech: true },
   { code: 'cs-CZ', label: 'Čeština', flag: '🇨🇿', speech: true },
+  { code: 'bg-BG', label: 'Български', flag: '🇧🇬', speech: true },
   { code: 'tr-TR', label: 'Türkçe', flag: '🇹🇷', speech: true },
 ]
 
 const BY_CODE = new Map(LANGUAGES.map((l) => [l.code, l]))
 
-export function findLanguage(code: string): Language {
+export function findLanguage(code: string | null | undefined): Language {
+  if (!code) return { code: '', label: 'Без мови', flag: '📚', speech: false }
   return (
     BY_CODE.get(code) ??
     // Невідомий регіон — пробуємо базову мову ('en-AU' → 'en-US').
@@ -42,7 +44,8 @@ export function languageLabel(code: string): string {
   return `${lang.flag} ${lang.label}`
 }
 
-/** Короткий підпис пари для перемикача колод: «🇺🇦 → 🇩🇪». */
-export function pairLabel(sourceLang: string, targetLang: string): string {
+/** Короткий підпис колоди для перемикача: «🇺🇦 → 🇩🇪» або «📚» для предметної. */
+export function pairLabel(sourceLang: string | null, targetLang: string | null): string {
+  if (!sourceLang || !targetLang) return '📚'
   return `${findLanguage(sourceLang).flag} → ${findLanguage(targetLang).flag}`
 }

@@ -1,7 +1,14 @@
-import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator'
+import { IsIn, IsOptional, IsString, Matches, MaxLength, MinLength, ValidateIf } from 'class-validator'
+
+import type { DeckKind } from '../types.js'
 
 /** BCP-47: 'uk', 'en-US', 'de-DE'. */
 const BCP47 = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/
+
+const KINDS: DeckKind[] = ['language', 'subject']
+
+/** Мови обов'язкові лише для мовних пар; у `subject` їх немає. */
+const isLanguageDeck = (dto: { kind?: DeckKind }) => (dto.kind ?? 'language') === 'language'
 
 export class CreateDeckDto {
   @IsString()
@@ -9,11 +16,17 @@ export class CreateDeckDto {
   @MaxLength(80)
   name: string
 
-  @Matches(BCP47, { message: 'sourceLang має бути кодом мови, напр. "uk".' })
-  sourceLang: string
+  @IsOptional()
+  @IsIn(KINDS, { message: 'kind має бути "language" або "subject".' })
+  kind?: DeckKind
 
+  @ValidateIf(isLanguageDeck)
+  @Matches(BCP47, { message: 'sourceLang має бути кодом мови, напр. "uk".' })
+  sourceLang?: string
+
+  @ValidateIf(isLanguageDeck)
   @Matches(BCP47, { message: 'targetLang має бути кодом мови, напр. "en-US".' })
-  targetLang: string
+  targetLang?: string
 }
 
 export class UpdateDeckDto {

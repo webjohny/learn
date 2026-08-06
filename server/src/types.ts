@@ -7,15 +7,23 @@ export interface PublicUser {
   createdAt: string
 }
 
-/** Колода = мовна пара. У користувача їх може бути кілька. */
+/**
+ * Тип колоди:
+ * - `language` — мовна пара, у якої є TTS, зворотний напрям і режим «Друк»;
+ * - `subject`  — довільний предмет (ПДР, співбесіда) — питання/відповідь без мов.
+ */
+export type DeckKind = 'language' | 'subject'
+
+/** Колода = мовна пара або предмет. У користувача їх може бути кілька. */
 export interface DeckMeta {
   id: string
   userId: string
   name: string
-  /** BCP-47 код мови питання, напр. 'uk' */
-  sourceLang: string
-  /** BCP-47 код мови відповіді — за ним обирається голос TTS, напр. 'en-US' */
-  targetLang: string
+  kind: DeckKind
+  /** BCP-47 код мови питання, напр. 'uk'. `null` для `subject`. */
+  sourceLang: string | null
+  /** BCP-47 код мови відповіді — за ним обирається голос TTS. `null` для `subject`. */
+  targetLang: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null

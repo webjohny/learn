@@ -33,6 +33,8 @@ interface FlashcardProps {
   reverse: boolean
   clozeBlur: boolean
   onSpeak: () => void
+  /** Чи має колода озвучення (мовна пара) */
+  speakable?: boolean
   hideAnswerText?: boolean
 }
 
@@ -45,6 +47,7 @@ export function Flashcard({
   reverse,
   clozeBlur,
   onSpeak,
+  speakable = true,
   hideAnswerText = false,
 }: FlashcardProps) {
   const x = useMotionValue(0)
@@ -77,7 +80,8 @@ export function Flashcard({
 
   const question = reverse ? card.back : card.front
   const answer = reverse ? card.front : card.back
-  const answerIsEnglish = !reverse
+  // Озвучуємо лише цільову мову: у зворотному напрямі відповідь — рідною.
+  const canSpeak = speakable && !reverse
 
   return (
     <motion.div
@@ -141,7 +145,7 @@ export function Flashcard({
           </div>
 
           <Footer>
-            {answerIsEnglish && ttsSupported && (
+            {canSpeak && ttsSupported && (
               <button
                 className="btn-soft px-2.5 py-1.5 text-xs"
                 onClick={(e) => {

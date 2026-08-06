@@ -5,9 +5,8 @@ import { useToast } from '@/components/ui/Toast'
 import { useTheme } from '@/hooks/useMisc'
 import { findLanguage } from '@/lib/langs'
 import { getVoicesFor, onVoicesChanged, speak, ttsSupported } from '@/lib/tts'
-import { useCards } from '@/store/selectors'
+import { useCards, useDeckProfile } from '@/store/selectors'
 import { useDeck } from '@/store/useDeck'
-import { useSession } from '@/store/useSession'
 
 /** Фраза для перевірки голосу — своя на кожну мову колоди. */
 const SAMPLES: Record<string, string> = {
@@ -24,13 +23,14 @@ const SAMPLES: Record<string, string> = {
   uk: 'Просто відпочивав удома з дружиною.',
 }
 
-const HOTKEYS: [string, string][] = [
+/** `languageOnly` — клавіші, що працюють лише в мовних парах. */
+const HOTKEYS: [string, string, boolean?][] = [
   ['Space', 'перевернути картку'],
   ['1 / ←', 'Забув'],
   ['2 / ↓', 'Важко'],
   ['3 / →', 'Добре'],
   ['4 / ↑', 'Легко'],
-  ['S', 'прослухати вимову'],
+  ['S', 'прослухати вимову', true],
   ['E', 'редагувати поточну картку'],
   ['Esc', 'закрити вікно'],
 ]
@@ -45,7 +45,7 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
   const resetAllProgress = useDeck((s) => s.resetAllProgress)
   const loadSeed = useDeck((s) => s.loadSeed)
   const cardCount = useCards().length
-  const targetLang = useSession((s) => s.activeDeckMeta()?.targetLang ?? 'en-US')
+  const { isLanguage, targetLang } = useDeckProfile()
   const { theme, toggle } = useTheme()
   const toast = useToast()
 
@@ -77,12 +77,14 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
           step={20}
           onChange={(reviewsPerDay) => setSettings({ reviewsPerDay })}
         />
-        <Toggle
-          label="Зворотний напрям"
-          hint="Спочатку англійська, потім переклад"
-          checked={settings.reverse}
-          onChange={(reverse) => setSettings({ reverse })}
-        />
+        {isLanguage && (
+          <Toggle
+            label="Зворотний напрям"
+            hint="Спочатку мова відповіді, потім переклад"
+            checked={settings.reverse}
+            onChange={(reverse) => setSettings({ reverse })}
+          />
+        )}
         <Toggle
           label="Ховати ключові слова"
           hint="Фрагменти в *[дужках]* показуються під блюром до кліку"
@@ -111,64 +113,66 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
         />
       </Section>
 
-      <Section icon="volume" title="Озвучення">
-        {ttsSupported ? (
-          <>
-            <Toggle
-              label="Автоозвучення відповіді"
-              hint="Англійська фраза читається одразу після перевороту"
-              checked={settings.autoSpeak}
-              onChange={(autoSpeak) => setSettings({ autoSpeak })}
-            />
-            <Slider
-              label="Швидкість мовлення"
-              value={settings.speechRate}
-              min={0.6}
-              max={1.4}
-              step={0.05}
-              format={(v) => `${v.toFixed(2)}×`}
-              onChange={(speechRate) => setSettings({ speechRate })}
-            />
-            <Field label={`Голос — ${findLanguage(targetLang).label}`}>
-              <div className="flex gap-2">
-                <select
-                  className="field flex-1"
-                  value={settings.voiceURI ?? ''}
-                  onChange={(e) => setSettings({ voiceURI: e.target.value || null })}
-                >
-                  <option value="">Системний за замовчуванням</option>
-                  {voices.map((voice: SpeechSynthesisVoice) => (
-                    <option key={voice.voiceURI} value={voice.voiceURI}>
-                      {voice.name} ({voice.lang})
-                    </option>
-                  ))}
-                </select>
-                <button
-                  className="btn-soft shrink-0"
-                  onClick={() =>
-                    speak(SAMPLES[targetLang.split('-')[0]] ?? 'This is a test.', {
-                      rate: settings.speechRate,
-                      voiceURI: settings.voiceURI,
-                      lang: targetLang,
-                    })
-                  }
-                >
-                  <Icon name="play" size={14} /> Тест
-                </button>
-              </div>
-              {!voices.length && (
-                <p className="text-[11px] text-amber-600 dark:text-amber-400">
-                  У системі немає голосу для цієї мови — озвучення буде недоступне.
-                </p>
-              )}
-            </Field>
-          </>
-        ) : (
-          <p className="text-[13px] text-ink-400">
-            Браузер не підтримує Web Speech API — озвучення недоступне.
-          </p>
-        )}
-      </Section>
+      {isLanguage && (
+        <Section icon="volume" title="Озвучення">
+          {ttsSupported ? (
+            <>
+              <Toggle
+                label="Автоозвучення відповіді"
+                hint="Фраза цільовою мовою читається одразу після перевороту"
+                checked={settings.autoSpeak}
+                onChange={(autoSpeak) => setSettings({ autoSpeak })}
+              />
+              <Slider
+                label="Швидкість мовлення"
+                value={settings.speechRate}
+                min={0.6}
+                max={1.4}
+                step={0.05}
+                format={(v) => `${v.toFixed(2)}×`}
+                onChange={(speechRate) => setSettings({ speechRate })}
+              />
+              <Field label={`Голос — ${findLanguage(targetLang).label}`}>
+                <div className="flex gap-2">
+                  <select
+                    className="field flex-1"
+                    value={settings.voiceURI ?? ''}
+                    onChange={(e) => setSettings({ voiceURI: e.target.value || null })}
+                  >
+                    <option value="">Системний за замовчуванням</option>
+                    {voices.map((voice: SpeechSynthesisVoice) => (
+                      <option key={voice.voiceURI} value={voice.voiceURI}>
+                        {voice.name} ({voice.lang})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    className="btn-soft shrink-0"
+                    onClick={() =>
+                      speak(SAMPLES[targetLang.split('-')[0]] ?? 'This is a test.', {
+                        rate: settings.speechRate,
+                        voiceURI: settings.voiceURI,
+                        lang: targetLang,
+                      })
+                    }
+                  >
+                    <Icon name="play" size={14} /> Тест
+                  </button>
+                </div>
+                {!voices.length && (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                    У системі немає голосу для цієї мови — озвучення буде недоступне.
+                  </p>
+                )}
+              </Field>
+            </>
+          ) : (
+            <p className="text-[13px] text-ink-400">
+              Браузер не підтримує Web Speech API — озвучення недоступне.
+            </p>
+          )}
+        </Section>
+      )}
 
       <Section icon="settings" title="Інтерфейс">
         <Toggle
@@ -187,7 +191,7 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
 
       <Section icon="keyboard" title="Гарячі клавіші">
         <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
-          {HOTKEYS.map(([key, action]) => (
+          {HOTKEYS.filter(([, , languageOnly]) => isLanguage || !languageOnly).map(([key, action]) => (
             <div key={key} className="flex items-center justify-between gap-3 text-[13px]">
               <dt className="text-ink-500 dark:text-ink-400">{action}</dt>
               <dd className="kbd shrink-0">{key}</dd>
@@ -219,22 +223,25 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
             {confirm === 'progress' ? 'Точно скинути прогрес?' : 'Скинути прогрес'}
           </button>
 
-          <button
-            className={`btn ${
-              confirm === 'seed'
-                ? 'bg-rose-600 text-white hover:bg-rose-500'
-                : 'btn-soft text-rose-600 dark:text-rose-400'
-            }`}
-            onClick={() => {
-              if (confirm !== 'seed') return setConfirm('seed')
-              loadSeed()
-              setConfirm(null)
-              toast('Стартову колоду відновлено', 'info')
-            }}
-          >
-            <Icon name="undo" size={16} />
-            {confirm === 'seed' ? 'Замінити всі картки?' : 'Повернути стартову колоду'}
-          </button>
+          {/* Стартовий набір — англійські фрази; у предметній колоді він би затер картки. */}
+          {isLanguage && (
+            <button
+              className={`btn ${
+                confirm === 'seed'
+                  ? 'bg-rose-600 text-white hover:bg-rose-500'
+                  : 'btn-soft text-rose-600 dark:text-rose-400'
+              }`}
+              onClick={() => {
+                if (confirm !== 'seed') return setConfirm('seed')
+                loadSeed()
+                setConfirm(null)
+                toast('Стартову колоду відновлено', 'info')
+              }}
+            >
+              <Icon name="undo" size={16} />
+              {confirm === 'seed' ? 'Замінити всі картки?' : 'Повернути стартову колоду'}
+            </button>
+          )}
         </div>
         <p className="text-[11px] text-ink-400">
           Дані зберігаються локально в браузері (localStorage). Регулярно робіть бекап.

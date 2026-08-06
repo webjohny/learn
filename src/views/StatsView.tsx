@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 
 import { Icon, type IconName } from '@/components/ui/Icon'
-import { dayKey, formatDuration, lastNDays, shiftDay } from '@/lib/date'
+import { dayKey, formatDuration, formatRelative, lastNDays, shiftDay } from '@/lib/date'
 import { isNew } from '@/lib/sm2'
 import { useCards, useDays, useLog, useMaturity, useToday } from '@/store/selectors'
+import { useQuizzes } from '@/store/useQuizzes'
 
 const HISTORY_DAYS = 14
 const FORECAST_DAYS = 7
@@ -184,7 +185,61 @@ export function StatsView() {
           )}
         </section>
       </div>
+
+      <QuizStats />
     </div>
+  )
+}
+
+/**
+ * Окрема секція: вікторини не пов'язані з картками, тож їхні числа не
+ * зливаються з метриками SM-2 вище.
+ */
+function QuizStats() {
+  const quizzes = useQuizzes((s) => s.quizzes)
+  const runs = useQuizzes((s) => s.runs)
+
+  const recent = useMemo(
+    () => [...runs].sort((a, b) => b.finishedAt.localeCompare(a.finishedAt)).slice(0, 5),
+    [runs],
+  )
+
+  const totals = useMemo(() => {
+    const score = runs.reduce((sum, r) => sum + r.score, 0)
+    const total = runs.reduce((sum, r) => sum + r.total, 0)
+    return { runs: runs.length, accuracy: total ? Math.round((score / total) * 100) : 0 }
+  }, [runs])
+
+  const titleOf = (quizId: string) =>
+    quizzes.find((q) => q.id === quizId)?.title ?? 'Видалена вікторина'
+
+  return (
+    <section className="surface p-4">
+      <SectionTitle
+        icon="target"
+        title="Вікторини"
+        hint={totals.runs ? `${totals.runs} прогонів · ${totals.accuracy}% точності` : undefined}
+      />
+      {recent.length ? (
+        <ul className="mt-3 space-y-2">
+          {recent.map((run) => (
+            <li key={run.id} className="flex items-center gap-2 text-[13px]">
+              <span className="min-w-0 flex-1 truncate">{titleOf(run.quizId)}</span>
+              <span className="shrink-0 text-[11px] text-ink-400">
+                {formatRelative(run.finishedAt)}
+              </span>
+              <span className="shrink-0 rounded-md bg-brand-500/12 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-brand-600 dark:text-brand-400">
+                {run.score}/{run.total}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 text-[13px] text-ink-400">
+          Жодного прогону. Вікторини живуть окремо від карток — на прогрес колоди вони не впливають.
+        </p>
+      )}
+    </section>
   )
 }
 

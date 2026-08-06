@@ -125,6 +125,40 @@ check('нелегальний код мови → 400', badLang.status === 400, 
 const decks = await alice('GET', '/api/decks')
 check('дві колоди в акаунті', decks.data?.decks?.length === 2)
 const enDeck = decks.data.decks.find((d) => d.targetLang === 'en-US')
+check('мовна пара має kind = language', enDeck?.kind === 'language', `отримано ${enDeck?.kind}`)
+
+section('Предметні колоди')
+const subject = await alice('POST', '/api/decks', { name: 'ПДР', kind: 'subject' })
+check('створення предметної колоди без мов → 201', subject.status === 201, `отримано ${subject.status}`)
+const subjectDeck = subject.data?.deck
+check('kind збережено', subjectDeck?.kind === 'subject', `отримано ${subjectDeck?.kind}`)
+check(
+  'мови порожні',
+  subjectDeck?.sourceLang === null && subjectDeck?.targetLang === null,
+  `отримано ${subjectDeck?.sourceLang} / ${subjectDeck?.targetLang}`,
+)
+
+const noLangs = await alice('POST', '/api/decks', { name: 'Без мов' })
+check('мовна пара без мов → 400', noLangs.status === 400, `отримано ${noLangs.status}`)
+
+const subjectReloaded = (await alice('GET', '/api/decks')).data?.decks?.find(
+  (d) => d.id === subjectDeck.id,
+)
+check(
+  'предметна колода читається з БД без мов',
+  subjectReloaded?.kind === 'subject' && subjectReloaded?.sourceLang === null,
+)
+
+const renamed = await alice('PATCH', `/api/decks/${subjectDeck.id}`, { name: 'ПДР 2026' })
+check(
+  'перейменування не повертає мови',
+  renamed.data?.deck?.name === 'ПДР 2026' && renamed.data?.deck?.targetLang === null,
+)
+
+check(
+  'предметну колоду видалено → 204',
+  (await alice('DELETE', `/api/decks/${subjectDeck.id}`)).status === 204,
+)
 
 section('Синхронізація карток')
 const t1 = new Date(Date.now() - 60_000).toISOString()
@@ -228,6 +262,113 @@ check(
   'картка Аліси лишилась у її колоді',
   aliceIntact.data.cards.find((c) => c.id === CARD_ID)?.front === 'НОВА ВЕРСІЯ',
 )
+
+section('Вікторини — окремий контур')
+const QUIZ_ID = `quiz-${uniq}`
+const RUN_ID = `run-${uniq}`
+
+const anonQuiz = await createClient()('GET', '/api/quiz')
+check('вікторини без сесії → 401', anonQuiz.status === 401, `отримано ${anonQuiz.status}`)
+
+const quizPush = await alice('POST', '/api/quiz', {
+  quizzes: [
+    {
+      id: QUIZ_ID,
+      title: 'ПДР: знаки',
+      mode: 'graded',
+      questions: [
+        {
+          id: `q1-${uniq}`,
+          text: 'Що означає знак «Стоп»?',
+          type: 'single',
+          answers: [
+            { id: `a1-${uniq}`, text: 'Рух без зупинки заборонено', correct: true },
+            { id: `a2-${uniq}`, text: 'Поступитися дорогою', correct: false },
+          ],
+        },
+      ],
+      updatedAt: new Date().toISOString(),
+    },
+  ],
+})
+check('push вікторини → 200', quizPush.status === 200, JSON.stringify(quizPush.data))
+check('вікторину застосовано', quizPush.data?.appliedQuizzes === 1)
+
+const quizPull = await alice('GET', '/api/quiz')
+const pulledQuiz = quizPull.data?.quizzes?.find((q) => q.id === QUIZ_ID)
+check('pull повертає вікторину', Boolean(pulledQuiz))
+check('вкладені питання вціліли', pulledQuiz?.questions?.[0]?.answers?.length === 2)
+check('кирилиця у питанні вціліла', pulledQuiz?.questions?.[0]?.text?.includes('Стоп'))
+check('правильна відповідь позначена', pulledQuiz?.questions?.[0]?.answers?.[0]?.correct === true)
+
+// forbidNonWhitelisted: незадеклароване поле має відхилятись, а не мовчки зникати.
+const badField = await alice('POST', '/api/quiz', {
+  quizzes: [
+    { id: `x-${uniq}`, title: 'X', mode: 'graded', questions: [], updatedAt: new Date().toISOString(), hacked: true },
+  ],
+})
+check('незадеклароване поле → 400', badField.status === 400, `отримано ${badField.status}`)
+
+const badMode = await alice('POST', '/api/quiz', {
+  quizzes: [{ id: `y-${uniq}`, title: 'Y', mode: 'kahoot', questions: [], updatedAt: new Date().toISOString() }],
+})
+check('невідомий mode → 400', badMode.status === 400, `отримано ${badMode.status}`)
+
+const staleQuiz = await alice('POST', '/api/quiz', {
+  quizzes: [
+    {
+      id: QUIZ_ID,
+      title: 'СТАРА ВЕРСІЯ',
+      mode: 'graded',
+      questions: [],
+      updatedAt: new Date(Date.now() - 60_000).toISOString(),
+    },
+  ],
+})
+check(
+  'застаріла вікторина відкинута',
+  staleQuiz.data?.skippedQuizzes === 1,
+  JSON.stringify(staleQuiz.data),
+)
+
+const runPush = await alice('POST', '/api/quiz', {
+  runs: [{ id: RUN_ID, quizId: QUIZ_ID, finishedAt: new Date().toISOString(), score: 1, total: 1 }],
+})
+check('прогон записано', runPush.data?.appliedRuns === 1)
+
+const runAgain = await alice('POST', '/api/quiz', {
+  runs: [{ id: RUN_ID, quizId: QUIZ_ID, finishedAt: new Date().toISOString(), score: 9, total: 9 }],
+})
+check('повторний push прогону не дублює', runAgain.data?.appliedRuns === 0, JSON.stringify(runAgain.data))
+
+const runsPull = await alice('GET', '/api/quiz')
+check('прогон повернувся один раз', runsPull.data?.runs?.filter((r) => r.id === RUN_ID).length === 1)
+check('прогон не перезаписано', runsPull.data?.runs?.find((r) => r.id === RUN_ID)?.score === 1)
+
+const bobQuizzes = await bob('GET', '/api/quiz')
+check('Боб не бачить вікторин Аліси', bobQuizzes.data?.quizzes?.length === 0, JSON.stringify(bobQuizzes.data))
+
+const quizHijack = await bob('POST', '/api/quiz', {
+  quizzes: [
+    {
+      id: QUIZ_ID,
+      title: 'Спроба перехопити',
+      mode: 'graded',
+      questions: [],
+      updatedAt: new Date(Date.now() + 60_000).toISOString(),
+    },
+  ],
+})
+check('чужий id вікторини відхилено', quizHijack.data?.skippedQuizzes === 1, JSON.stringify(quizHijack.data))
+
+const aliceQuizIntact = await alice('GET', '/api/quiz')
+check(
+  'вікторина Аліси не змінилась',
+  aliceQuizIntact.data?.quizzes?.find((q) => q.id === QUIZ_ID)?.title === 'ПДР: знаки',
+)
+
+const sinceFuture = await alice('GET', `/api/quiz?since=${encodeURIComponent(new Date(Date.now() + 60_000).toISOString())}`)
+check('курсор since фільтрує', sinceFuture.data?.quizzes?.length === 0)
 
 section('Видалення колод')
 const delLast = await bob('DELETE', `/api/decks/${bobDecks.data.decks[0].id}`)

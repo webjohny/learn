@@ -1,6 +1,14 @@
 import { create } from 'zustand'
 
-import { ApiError, api, isOffline, type DeckMeta, type PublicUser } from '@/lib/api'
+import {
+  ApiError,
+  api,
+  isOffline,
+  type CreateDeckInput,
+  type DeckMeta,
+  type PublicUser,
+  type UpdateDeckInput,
+} from '@/lib/api'
 import { LOCAL_DECK_ID, useDeck } from './useDeck'
 
 export type AuthStatus = 'loading' | 'guest' | 'authed'
@@ -19,8 +27,8 @@ interface SessionState {
   login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
 
-  createDeck: (input: { name: string; sourceLang: string; targetLang: string }) => Promise<DeckMeta>
-  updateDeck: (id: string, input: Partial<DeckMeta>) => Promise<void>
+  createDeck: (input: CreateDeckInput) => Promise<DeckMeta>
+  updateDeck: (id: string, input: UpdateDeckInput) => Promise<void>
   deleteDeck: (id: string) => Promise<void>
 
   sync: (deckId?: string) => Promise<void>

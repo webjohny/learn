@@ -80,6 +80,9 @@ export class DatabaseService implements OnModuleDestroy {
         id          TEXT PRIMARY KEY,
         user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         name        TEXT NOT NULL,
+        kind        TEXT NOT NULL DEFAULT 'language',
+        -- Для kind = 'subject' мов немає: тримаємо '' і мапимо в null у сервісі.
+        -- (порожній рядок, а не NULL, щоб не перебудовувати таблицю на старих базах)
         source_lang TEXT NOT NULL,
         target_lang TEXT NOT NULL,
         created_at  TEXT NOT NULL,
@@ -120,7 +123,46 @@ export class DatabaseService implements OnModuleDestroy {
         PRIMARY KEY (deck_id, date)
       );
       CREATE INDEX IF NOT EXISTS day_stats_deck ON day_stats(deck_id, updated_at);
+
+      -- Вікторини не пов'язані з колодами й картками: власні таблиці,
+      -- скоуп — акаунт. Питання лежать JSON-рядком, бо вікторина
+      -- редагується й синхронізується цілим об'єктом.
+      CREATE TABLE IF NOT EXISTS quizzes (
+        id          TEXT PRIMARY KEY,
+        user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title       TEXT NOT NULL,
+        description TEXT,
+        mode        TEXT NOT NULL DEFAULT 'graded',
+        questions   TEXT NOT NULL DEFAULT '[]',
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL,
+        deleted_at  TEXT
+      );
+      CREATE INDEX IF NOT EXISTS quizzes_user ON quizzes(user_id, updated_at);
+
+      -- Прогони незмінні після завершення, тож конфліктів синку не буває.
+      CREATE TABLE IF NOT EXISTS quiz_runs (
+        id          TEXT PRIMARY KEY,
+        user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        quiz_id     TEXT NOT NULL,
+        finished_at TEXT NOT NULL,
+        score       INTEGER NOT NULL DEFAULT 0,
+        total       INTEGER NOT NULL DEFAULT 0,
+        updated_at  TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS quiz_runs_user ON quiz_runs(user_id, updated_at);
     `)
+
+    // Бази, створені до появи предметних колод, колонки `kind` не мають.
+    this.addColumn('decks', 'kind', "TEXT NOT NULL DEFAULT 'language'")
+  }
+
+  /** Ідемпотентний ALTER: `ADD COLUMN` у SQLite падає, якщо колонка вже є. */
+  private addColumn(table: string, column: string, definition: string) {
+    const columns = this.all<{ name: string }>(`PRAGMA table_info(${table})`)
+    if (columns.some((c) => c.name === column)) return
+    this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+    this.logger.log(`Міграція: ${table}.${column} додано`)
   }
 }
 

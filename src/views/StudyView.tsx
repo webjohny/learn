@@ -10,17 +10,31 @@ import { useHotkeys } from '@/hooks/useHotkeys'
 import { useStudySession } from '@/hooks/useStudySession'
 import { formatDuration } from '@/lib/date'
 import { speak, ttsSupported } from '@/lib/tts'
-import { useCounts } from '@/store/selectors'
+import { useCounts, useDeckProfile } from '@/store/selectors'
 import { useDeck } from '@/store/useDeck'
 import { useOverlayOpen } from '@/store/useOverlay'
-import { useSession } from '@/store/useSession'
 import type { Grade, StudyMode } from '@/types'
 import { TypeInPanel } from './TypeInPanel'
 
-const MODES: { key: StudyMode; label: string; icon: IconName; hint: string }[] = [
+interface ModeItem {
+  key: StudyMode
+  label: string
+  icon: IconName
+  hint: string
+  /** Лише для мовних пар: посимвольне звіряння відповіді. */
+  languageOnly?: boolean
+}
+
+const MODES: ModeItem[] = [
   { key: 'srs', label: 'Інтервали', icon: 'cards', hint: 'SM-2: повторення за розкладом' },
   { key: 'speed', label: 'Спринт', icon: 'zap', hint: 'Мікро-сесія на хвилину' },
-  { key: 'type', label: 'Друк', icon: 'pencilLine', hint: 'Активне пригадування — введіть фразу' },
+  {
+    key: 'type',
+    label: 'Друк',
+    icon: 'pencilLine',
+    hint: 'Активне пригадування — введіть фразу',
+    languageOnly: true,
+  },
 ]
 
 export function StudyView() {
@@ -35,22 +49,28 @@ export function StudyView() {
   const session = useStudySession(mode)
   const { card, revealed, reveal, answer, restart, finished } = session
 
-  const deckMeta = useSession((s) => s.activeDeckMeta())
-  const targetLang = deckMeta?.targetLang ?? 'en-US'
-  const sourceLang = deckMeta?.sourceLang ?? 'uk'
+  const { isLanguage, sourceLang, targetLang } = useDeckProfile()
+  // Предметна колода не має TTS і зворотного напряму — картка суто «питання → відповідь».
+  const reverse = isLanguage && settings.reverse
+  const modes = isLanguage ? MODES : MODES.filter((m) => !m.languageOnly)
+
+  // Перемикання на предметну колоду посеред сесії «Друку» лишило б недоступний режим.
+  useEffect(() => {
+    if (!isLanguage && mode === 'type') setMode('srs')
+  }, [isLanguage, mode])
 
   const speakAnswer = useCallback(() => {
-    if (!card) return
-    speak(settings.reverse ? card.front : card.back, {
+    if (!card || !isLanguage) return
+    speak(reverse ? card.front : card.back, {
       rate: settings.speechRate,
       voiceURI: settings.voiceURI,
-      lang: settings.reverse ? sourceLang : targetLang,
+      lang: reverse ? sourceLang : targetLang,
     })
-  }, [card, settings.reverse, settings.speechRate, settings.voiceURI, sourceLang, targetLang])
+  }, [card, isLanguage, reverse, settings.speechRate, settings.voiceURI, sourceLang, targetLang])
 
   // Автоозвучення цільової мови одразу після перевороту.
   useEffect(() => {
-    if (!revealed || !card || !settings.autoSpeak || settings.reverse) return
+    if (!revealed || !card || !isLanguage || !settings.autoSpeak || reverse) return
     speak(card.back, {
       rate: settings.speechRate,
       voiceURI: settings.voiceURI,
@@ -59,8 +79,9 @@ export function StudyView() {
   }, [
     revealed,
     card,
+    isLanguage,
     settings.autoSpeak,
-    settings.reverse,
+    reverse,
     settings.speechRate,
     settings.voiceURI,
     targetLang,
@@ -108,7 +129,7 @@ export function StudyView() {
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex items-center gap-2">
         <div className="flex flex-1 gap-1 rounded-xl bg-ink-900/5 p-1 dark:bg-white/6">
-          {MODES.map((item) => (
+          {modes.map((item) => (
             <button
               key={item.key}
               onClick={() => setMode(item.key)}
@@ -161,9 +182,10 @@ export function StudyView() {
                 onFlip={flip}
                 onSwipe={rate}
                 swipeEnabled={revealed && isTouch}
-                reverse={settings.reverse}
+                reverse={reverse}
                 clozeBlur={settings.clozeBlur}
                 onSpeak={speakAnswer}
+                speakable={isLanguage}
                 hideAnswerText={mode === 'type' && !revealed}
               />
             </div>
@@ -175,7 +197,7 @@ export function StudyView() {
                 revealed={revealed}
                 onReveal={reveal}
                 onRate={rate}
-                reverse={settings.reverse}
+                reverse={reverse}
               />
             ) : !revealed ? (
               <button className="btn-primary w-full py-3 text-base" onClick={flip}>
@@ -216,7 +238,7 @@ export function StudyView() {
         )}
       </AnimatePresence>
 
-      {ttsSupported && card && revealed && !settings.autoSpeak && (
+      {isLanguage && ttsSupported && card && revealed && !settings.autoSpeak && (
         <p className="text-center text-[11px] text-ink-400">
           <span className="kbd">S</span> — прослухати вимову
         </p>

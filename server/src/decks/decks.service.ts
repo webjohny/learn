@@ -2,11 +2,12 @@ import { randomUUID } from 'node:crypto'
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 
 import { DatabaseService, nowISO } from '../database/database.service.js'
-import type { DeckMeta } from '../types.js'
+import type { DeckKind, DeckMeta } from '../types.js'
 import type { CreateDeckDto, UpdateDeckDto } from './dto.js'
 
 const DEFAULT_DECK: CreateDeckDto = {
   name: 'Розмовна англійська',
+  kind: 'language',
   sourceLang: 'uk',
   targetLang: 'en-US',
 }
@@ -15,6 +16,7 @@ interface DeckRow {
   id: string
   user_id: string
   name: string
+  kind: DeckKind
   source_lang: string
   target_lang: string
   created_at: string
@@ -36,25 +38,28 @@ export class DecksService {
   }
 
   create(userId: string, dto: CreateDeckDto): DeckMeta {
+    const kind: DeckKind = dto.kind ?? 'language'
     const deck: DeckMeta = {
       id: randomUUID(),
       userId,
       name: dto.name.trim(),
-      sourceLang: dto.sourceLang,
-      targetLang: dto.targetLang,
+      kind,
+      sourceLang: kind === 'language' ? (dto.sourceLang ?? null) : null,
+      targetLang: kind === 'language' ? (dto.targetLang ?? null) : null,
       createdAt: nowISO(),
       updatedAt: nowISO(),
       deletedAt: null,
     }
 
     this.database.run(
-      `INSERT INTO decks (id, user_id, name, source_lang, target_lang, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO decks (id, user_id, name, kind, source_lang, target_lang, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       deck.id,
       deck.userId,
       deck.name,
-      deck.sourceLang,
-      deck.targetLang,
+      deck.kind,
+      deck.sourceLang ?? '',
+      deck.targetLang ?? '',
       deck.createdAt,
       deck.updatedAt,
     )
@@ -68,19 +73,22 @@ export class DecksService {
 
   update(userId: string, deckId: string, dto: UpdateDeckDto): DeckMeta {
     const deck = this.requireOwned(deckId, userId)
+    // `kind` не змінюємо: предметна колода не має мов, і зміна типу
+    // залишила б налаштування TTS та зворотного напряму без сенсу.
+    const language = deck.kind === 'language'
     const next: DeckMeta = {
       ...deck,
       name: dto.name?.trim() || deck.name,
-      sourceLang: dto.sourceLang ?? deck.sourceLang,
-      targetLang: dto.targetLang ?? deck.targetLang,
+      sourceLang: language ? (dto.sourceLang ?? deck.sourceLang) : null,
+      targetLang: language ? (dto.targetLang ?? deck.targetLang) : null,
       updatedAt: nowISO(),
     }
 
     this.database.run(
       'UPDATE decks SET name = ?, source_lang = ?, target_lang = ?, updated_at = ? WHERE id = ?',
       next.name,
-      next.sourceLang,
-      next.targetLang,
+      next.sourceLang ?? '',
+      next.targetLang ?? '',
       next.updatedAt,
       next.id,
     )
@@ -116,8 +124,9 @@ function toDeck(row: DeckRow): DeckMeta {
     id: row.id,
     userId: row.user_id,
     name: row.name,
-    sourceLang: row.source_lang,
-    targetLang: row.target_lang,
+    kind: row.kind ?? 'language',
+    sourceLang: row.source_lang || null,
+    targetLang: row.target_lang || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,

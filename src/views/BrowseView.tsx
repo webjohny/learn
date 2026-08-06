@@ -11,10 +11,10 @@ import {
   useCards,
   useCategories,
   useDeckData,
+  useDeckProfile,
   useTags,
 } from '@/store/selectors'
 import { useDeck } from '@/store/useDeck'
-import { useSession } from '@/store/useSession'
 import type { Card } from '@/types'
 
 const PAGE = 40
@@ -34,7 +34,7 @@ export function BrowseView() {
   const [limit, setLimit] = useState(PAGE)
   const [editing, setEditing] = useState<Card | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)
-  const targetLang = useSession((s) => s.activeDeckMeta()?.targetLang ?? 'en-US')
+  const { isLanguage, targetLang } = useDeckProfile()
 
   const filtered = useMemo(() => {
     const q = normalize(query)
@@ -149,7 +149,7 @@ export function BrowseView() {
             </div>
 
             <div className="flex shrink-0 flex-col gap-1">
-              {ttsSupported && (
+              {isLanguage && ttsSupported && (
                 <button
                   className="btn-ghost px-2 py-1"
                   title="Прослухати"

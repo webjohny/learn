@@ -57,7 +57,11 @@ export class AuthController {
     res.cookie(SESSION_COOKIE, token, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      // За HTTPS cookie має бути secure. COOKIE_SECURE=false лишає запасний
+      // вихід для локального прогону прод-збірки по http://localhost.
+      secure: process.env.COOKIE_SECURE
+        ? process.env.COOKIE_SECURE === 'true'
+        : process.env.NODE_ENV === 'production',
       expires: expiresAt,
       path: '/',
     })

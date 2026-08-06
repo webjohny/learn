@@ -8,7 +8,7 @@ import { pairLabel } from '@/lib/langs'
 import { LOCAL_DECK_ID, useDeck } from '@/store/useDeck'
 import { useSession } from '@/store/useSession'
 
-/** Акаунт + перемикач мовних пар. Гостю показує лише кнопку входу. */
+/** Акаунт + перемикач колод. Гостю показує лише кнопку входу. */
 export function AccountMenu() {
   const status = useSession((s) => s.status)
   const user = useSession((s) => s.user)
@@ -75,7 +75,7 @@ export function AccountMenu() {
 
           <div className="max-h-64 overflow-y-auto py-1.5">
             <p className="px-3.5 py-1 text-[10px] font-semibold tracking-wide text-ink-400 uppercase">
-              Мовні пари
+              Колоди
             </p>
             {decks.map((deck) => (
               <button
@@ -100,7 +100,7 @@ export function AccountMenu() {
           <div className="border-t border-ink-200/70 p-1.5 dark:border-white/8">
             <MenuItem
               icon="plus"
-              label="Нова мовна пара"
+              label="Нова колода"
               onClick={() => {
                 setDeckDialogOpen(true)
                 setOpen(false)
