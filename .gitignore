@@ -7,3 +7,6 @@ dist-ssr
 .vite
 .DS_Store
 *.tsbuildinfo
+
+# Локальні налаштування Claude Code — персональні, не для репозиторію.
+.claude/settings.local.json
