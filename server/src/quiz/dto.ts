@@ -46,6 +46,24 @@ export class QuizQuestionDto {
   @MaxLength(2000)
   text: string
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  description?: string
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(30)
+  @IsString({ each: true })
+  @MaxLength(1000, { each: true })
+  subRules?: string[]
+
+  // Код може бути довгим, але це все ще одне питання, а не файл.
+  @IsOptional()
+  @IsString()
+  @MaxLength(20000)
+  code?: string
+
   @IsIn(TYPES, { message: 'type має бути "single" або "multiple".' })
   type: QuizQuestionType
 

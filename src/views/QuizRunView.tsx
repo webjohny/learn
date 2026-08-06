@@ -110,6 +110,24 @@ export function QuizRunView() {
           {question.text}
         </h2>
 
+        {question.description && (
+          <p className="text-[14px] leading-relaxed text-ink-600 dark:text-ink-300">
+            {question.description}
+          </p>
+        )}
+
+        {question.subRules && question.subRules.length > 0 && (
+          <ul className="space-y-1 border-l-2 border-brand-500/30 pl-3">
+            {question.subRules.map((rule, i) => (
+              <li key={i} className="text-[13px] leading-relaxed text-ink-500 dark:text-ink-400">
+                {rule}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {question.code && <CodeBlock code={question.code} />}
+
         {multiple && (
           <p className="text-[11px] text-ink-400">Можна обрати кілька варіантів</p>
         )}
@@ -205,6 +223,19 @@ export function QuizRunView() {
         )}
       </div>
     </div>
+  )
+}
+
+/**
+ * Код показуємо як є: без підсвітки й без переносу рядків — відступи та
+ * довжина рядка часто і є суттю питання. Довгі рядки скролять сам блок,
+ * а не розтягують сторінку.
+ */
+function CodeBlock({ code }: { code: string }) {
+  return (
+    <pre className="max-h-[50dvh] overflow-auto rounded-xl border border-ink-200 bg-ink-900/4 p-3 text-[12.5px] leading-relaxed dark:border-white/10 dark:bg-black/30">
+      <code className="font-mono whitespace-pre">{code}</code>
+    </pre>
   )
 }
 

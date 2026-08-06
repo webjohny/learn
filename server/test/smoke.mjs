@@ -280,6 +280,9 @@ const quizPush = await alice('POST', '/api/quiz', {
         {
           id: `q1-${uniq}`,
           text: 'Що означає знак «Стоп»?',
+          description: 'Знак перед перехрестям із головною дорогою.',
+          subRules: ['Зупинка обов’язкова', 'Зупинятись перед стоп-лінією'],
+          code: 'if (sign === "STOP") {\n\tstop()\n}',
           type: 'single',
           answers: [
             { id: `a1-${uniq}`, text: 'Рух без зупинки заборонено', correct: true },
@@ -300,6 +303,12 @@ check('pull повертає вікторину', Boolean(pulledQuiz))
 check('вкладені питання вціліли', pulledQuiz?.questions?.[0]?.answers?.length === 2)
 check('кирилиця у питанні вціліла', pulledQuiz?.questions?.[0]?.text?.includes('Стоп'))
 check('правильна відповідь позначена', pulledQuiz?.questions?.[0]?.answers?.[0]?.correct === true)
+
+const q1 = pulledQuiz?.questions?.[0]
+check('опис питання вцілів', q1?.description?.includes('перехрестям'))
+check('subRules вціліли масивом', Array.isArray(q1?.subRules) && q1.subRules.length === 2)
+// Відступи й переноси в коді — його зміст, тож JSON-колонка має їх зберегти.
+check('код вцілів разом з \\n і \\t', q1?.code === 'if (sign === "STOP") {\n\tstop()\n}', JSON.stringify(q1?.code))
 
 // forbidNonWhitelisted: незадеклароване поле має відхилятись, а не мовчки зникати.
 const badField = await alice('POST', '/api/quiz', {

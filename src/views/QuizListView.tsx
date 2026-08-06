@@ -40,6 +40,10 @@ export function QuizListView() {
       mode: quiz.mode,
       questions: quiz.questions.map((q) => ({
         text: q.text,
+        // Порожні поля не пишемо — інакше експорт обростає "description": null.
+        ...(q.description ? { description: q.description } : {}),
+        ...(q.subRules?.length ? { subRules: q.subRules } : {}),
+        ...(q.code ? { code: q.code } : {}),
         type: q.type,
         answers: q.answers.map((a) => ({ text: a.text, correct: a.correct })),
       })),

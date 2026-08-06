@@ -45,6 +45,24 @@ function parseAnswers(raw: unknown, where: string): QuizAnswerOption[] {
   return answers
 }
 
+/** Приймає і масив рядків, і один рядок із переносами. */
+function parseSubRules(raw: unknown, where: string): string[] {
+  if (raw === undefined || raw === null) return []
+
+  if (typeof raw === 'string') {
+    return raw
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+  }
+
+  if (!Array.isArray(raw)) {
+    throw new QuizImportError(`${where}: "subRules" має бути масивом рядків.`)
+  }
+
+  return raw.map((item) => asString(item)).filter(Boolean)
+}
+
 function parseQuestions(raw: unknown): QuizQuestion[] {
   if (!Array.isArray(raw)) {
     throw new QuizImportError('Поле "questions" має бути масивом питань.')
@@ -70,7 +88,18 @@ function parseQuestions(raw: unknown): QuizQuestion[] {
     const type: QuizQuestionType =
       correctCount > 1 ? 'multiple' : (rawType as QuizQuestionType) || 'single'
 
-    return { id: newId(), text, type, answers }
+    const question: QuizQuestion = { id: newId(), text, type, answers }
+
+    const description = asString(record.description)
+    if (description) question.description = description
+
+    const subRules = parseSubRules(record.subRules, where)
+    if (subRules.length) question.subRules = subRules
+
+    // Код не тримаємо: відступи й переноси — це його зміст.
+    if (typeof record.code === 'string' && record.code.trim()) question.code = record.code
+
+    return question
   })
 
   if (!questions.length) throw new QuizImportError('У вікторині немає жодного питання.')
@@ -128,11 +157,25 @@ export const QUIZ_SAMPLE = `{
   "questions": [
     {
       "text": "Що означає знак «Стоп»?",
+      "description": "Знак встановлено перед перехрестям із головною дорогою.",
+      "subRules": [
+        "Зупинка обов'язкова навіть за відсутності інших авто",
+        "Зупинятись треба перед стоп-лінією"
+      ],
       "type": "single",
       "answers": [
         { "text": "Рух без зупинки заборонено", "correct": true },
         { "text": "Поступитися дорогою", "correct": false },
         { "text": "Обмеження швидкості", "correct": false }
+      ]
+    },
+    {
+      "text": "Що виведе цей код?",
+      "code": "const a = [1, 2, 3]\\nconsole.log(a.map(x => x * 2))",
+      "type": "single",
+      "answers": [
+        { "text": "[2, 4, 6]", "correct": true },
+        { "text": "[1, 2, 3]", "correct": false }
       ]
     }
   ]

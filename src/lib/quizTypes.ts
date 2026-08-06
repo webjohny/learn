@@ -15,6 +15,12 @@ export interface QuizAnswerOption {
 export interface QuizQuestion {
   id: string
   text: string
+  /** Розгорнутий контекст під заголовком питання */
+  description?: string
+  /** Уточнення/умови — показуються списком під описом (або під заголовком) */
+  subRules?: string[]
+  /** Фрагмент коду: моноширинний, без підсвітки, з збереженням пробілів */
+  code?: string
   type: QuizQuestionType
   answers: QuizAnswerOption[]
 }

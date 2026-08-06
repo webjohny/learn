@@ -148,6 +148,48 @@ export function QuizEditorView() {
               onChange={(e) => patchQuestion(question.id, { text: e.target.value })}
             />
 
+            <label className="block space-y-1">
+              <span className="text-[11px] font-medium text-ink-400">Опис (необов'язково)</span>
+              <textarea
+                className="field resize-y text-[13px]"
+                rows={2}
+                placeholder="Розгорнутий контекст під заголовком питання"
+                value={question.description ?? ''}
+                onChange={(e) =>
+                  patchQuestion(question.id, { description: e.target.value || undefined })
+                }
+              />
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-[11px] font-medium text-ink-400">
+                Уточнення — по одному на рядок (необов'язково)
+              </span>
+              <textarea
+                className="field resize-y text-[13px]"
+                rows={2}
+                placeholder={'Перше уточнення\nДруге уточнення'}
+                value={(question.subRules ?? []).join('\n')}
+                onChange={(e) => {
+                  const lines = e.target.value.split('\n').filter((l) => l.trim())
+                  patchQuestion(question.id, { subRules: lines.length ? lines : undefined })
+                }}
+              />
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-[11px] font-medium text-ink-400">Код (необов'язково)</span>
+              <textarea
+                className="field resize-y font-mono text-[12.5px]"
+                rows={4}
+                spellCheck={false}
+                placeholder="const a = [1, 2, 3]"
+                // Значення не тримаємо: відступи в коді значущі.
+                value={question.code ?? ''}
+                onChange={(e) => patchQuestion(question.id, { code: e.target.value || undefined })}
+              />
+            </label>
+
             <div className="space-y-1.5">
               {question.answers.map((answer) => (
                 <div key={answer.id} className="flex items-center gap-2">
