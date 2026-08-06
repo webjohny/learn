@@ -44,22 +44,27 @@ export function QuizRunView() {
     setAnswers(next)
 
     const last = index + 1 >= total
-    if (last) {
-      recordRun(quiz.id, next.filter((a) => a.correct).length, total)
-      setPhase('done')
-      return
-    }
 
     // Опитування не перериває потік фідбеком — розбір буде в кінці.
     if (quiz.mode === 'survey') {
+      if (last) return finish(next)
       setIndex(index + 1)
       setSelected([])
-    } else {
-      setPhase('feedback')
+      return
     }
+
+    // З оцінкою — підсвічуємо варіанти прямо на питанні, зокрема й на останньому:
+    // інакше остання відповідь була б єдиною, чию правильність не показали.
+    setPhase('feedback')
+  }
+
+  const finish = (all: Answered[]) => {
+    recordRun(quiz.id, all.filter((a) => a.correct).length, total)
+    setPhase('done')
   }
 
   const goNext = () => {
+    if (index + 1 >= total) return finish(answers)
     setIndex(index + 1)
     setSelected([])
     setPhase('question')
@@ -77,52 +82,13 @@ export function QuizRunView() {
     return <Summary quiz={quiz} answers={answers} score={score} total={total} onRestart={restart} />
   }
 
-  if (phase === 'feedback') {
-    const last = answers[answers.length - 1]
-    return (
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-2">
-        <Progress current={index + 1} total={total} />
-        <div
-          className={`surface flex items-center gap-3 p-4 ${
-            last.correct
-              ? 'border-emerald-500/30 bg-emerald-500/8'
-              : 'border-rose-500/30 bg-rose-500/8'
-          }`}
-        >
-          <Icon
-            name={last.correct ? 'check' : 'info'}
-            size={22}
-            className={last.correct ? 'text-emerald-500' : 'text-rose-500'}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold">
-              {last.correct ? 'Правильно' : 'Неправильно'}
-            </p>
-            {!last.correct && (
-              <p className="mt-0.5 text-[13px] text-ink-500 dark:text-ink-400">
-                Правильна відповідь:{' '}
-                {last.question.answers
-                  .filter((a) => a.correct)
-                  .map((a) => a.text)
-                  .join(', ')}
-              </p>
-            )}
-          </div>
-          <span className="chip shrink-0">
-            {score} / {answers.length}
-          </span>
-        </div>
-
-        <button className="btn-primary w-full py-3 text-base" onClick={goNext}>
-          Далі <Icon name="chevronDown" size={16} className="-rotate-90" />
-        </button>
-      </div>
-    )
-  }
-
   if (!question) return <Missing />
 
   const multiple = question.type === 'multiple'
+  // Фідбек показуємо на самому питанні: варіанти лишаються на екрані й
+  // перефарбовуються, а не підміняються окремим екраном.
+  const revealed = phase === 'feedback'
+  const lastCorrect = revealed && answers[answers.length - 1]?.correct
 
   const toggle = (answerId: string) => {
     setError(null)
@@ -151,32 +117,72 @@ export function QuizRunView() {
         <div className="grid gap-2">
           {question.answers.map((answer) => {
             const checked = selected.includes(answer.id)
+            // Після відповіді: правильні — зелені завжди (навіть непозначені,
+            // щоб було видно, що саме треба було обрати); хибно обраний — червоний.
+            const missed = revealed && answer.correct
+            const wrong = revealed && checked && !answer.correct
+
+            const tone = missed
+              ? 'border-emerald-500/60 bg-emerald-500/12'
+              : wrong
+                ? 'border-rose-500/60 bg-rose-500/12'
+                : checked
+                  ? 'border-brand-500/50 bg-brand-500/10'
+                  : revealed
+                    ? 'border-ink-200 opacity-55 dark:border-white/10'
+                    : 'border-ink-200 hover:bg-ink-900/4 dark:border-white/10 dark:hover:bg-white/6'
+
+            const boxTone = missed
+              ? 'border-emerald-500 bg-emerald-500 text-white'
+              : wrong
+                ? 'border-rose-500 bg-rose-500 text-white'
+                : checked
+                  ? 'border-brand-500 bg-brand-500 text-white'
+                  : 'border-ink-300 dark:border-white/20'
+
             return (
               <button
                 key={answer.id}
                 onClick={() => toggle(answer.id)}
-                className={`flex items-center gap-2.5 rounded-xl border p-3 text-left text-[14px] transition-colors ${
-                  checked
-                    ? 'border-brand-500/50 bg-brand-500/10'
-                    : 'border-ink-200 hover:bg-ink-900/4 dark:border-white/10 dark:hover:bg-white/6'
-                }`}
+                disabled={revealed}
+                className={`flex items-center gap-2.5 rounded-xl border p-3 text-left text-[14px] transition-colors disabled:cursor-default ${tone}`}
               >
                 <span
                   className={`grid size-[18px] shrink-0 place-items-center border-2 ${
                     multiple ? 'rounded' : 'rounded-full'
-                  } ${
-                    checked
-                      ? 'border-brand-500 bg-brand-500 text-white'
-                      : 'border-ink-300 dark:border-white/20'
-                  }`}
+                  } ${boxTone}`}
                 >
-                  {checked && <Icon name="check" size={12} />}
+                  {missed && <Icon name="check" size={12} />}
+                  {wrong && <Icon name="x" size={12} />}
+                  {!revealed && checked && <Icon name="check" size={12} />}
                 </span>
                 <span className="min-w-0 flex-1">{answer.text}</span>
+                {/* Колір сам по собі не має нести сенс — дублюємо словом. */}
+                {missed && (
+                  <span className="shrink-0 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    правильна
+                  </span>
+                )}
+                {wrong && (
+                  <span className="shrink-0 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                    ваш вибір
+                  </span>
+                )}
               </button>
             )
           })}
         </div>
+
+        {revealed && (
+          <p
+            className={`flex items-center gap-1.5 text-[13px] font-semibold ${
+              lastCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+            }`}
+          >
+            <Icon name={lastCorrect ? 'check' : 'x'} size={15} />
+            {lastCorrect ? 'Правильно' : 'Неправильно'}
+          </p>
+        )}
 
         {error && <p className="text-[12px] text-amber-600 dark:text-amber-400">{error}</p>}
       </div>
@@ -187,9 +193,16 @@ export function QuizRunView() {
             <Icon name="target" size={13} /> {score} / {answers.length}
           </span>
         )}
-        <button className="btn-primary ml-auto px-5 py-2.5" onClick={submit}>
-          <Icon name="check" size={16} /> Відповісти
-        </button>
+        {revealed ? (
+          <button className="btn-primary ml-auto px-5 py-2.5" onClick={goNext}>
+            {index + 1 >= total ? 'Підсумок' : 'Далі'}
+            <Icon name="chevronRight" size={16} />
+          </button>
+        ) : (
+          <button className="btn-primary ml-auto px-5 py-2.5" onClick={submit}>
+            <Icon name="check" size={16} /> Відповісти
+          </button>
+        )}
       </div>
     </div>
   )
