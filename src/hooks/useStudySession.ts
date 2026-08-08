@@ -35,15 +35,19 @@ export interface StudySession {
   timeLeftMs: number | null
 }
 
-function buildQueue(
+/** Експортовано заради регресійних тестів — у застосунку викликається лише звідси. */
+export function buildQueue(
   pool: Card[],
   mode: StudyMode,
   limits: { newLeft: number; reviewsLeft: number; speedSize: number },
 ): string[] {
   if (mode === 'speed') {
     // Тайм-атак: беремо будь-які картки, спершу ті, що вже знайомі.
-    const known = shuffle(pool.filter((c) => !isNew(c)))
-    const fresh = shuffle(pool.filter(isNew))
+    // Призупинені відсіює й `useStudyPool`, але тут гілка не проходить через
+    // `isDue`, тож без власної перевірки гарантія трималася б лише на викликачі.
+    const active = pool.filter((c) => !c.suspended)
+    const known = shuffle(active.filter((c) => !isNew(c)))
+    const fresh = shuffle(active.filter(isNew))
     return [...known, ...fresh].slice(0, limits.speedSize).map((c) => c.id)
   }
 

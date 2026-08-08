@@ -15,7 +15,8 @@
     "test:api": "node server/test/smoke.mjs",
     "typecheck": "tsc -b --noEmit && tsc -p server --noEmit",
     "test:deck": "node test/deck-isolation.mjs",
-    "test:i18n": "node test/i18n.mjs"
+    "test:i18n": "node test/i18n.mjs",
+    "test:sm2": "node test/scheduler.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.28",
