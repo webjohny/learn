@@ -14,7 +14,8 @@
     "preview": "vite preview",
     "test:api": "node server/test/smoke.mjs",
     "typecheck": "tsc -b --noEmit && tsc -p server --noEmit",
-    "test:deck": "node test/deck-isolation.mjs"
+    "test:deck": "node test/deck-isolation.mjs",
+    "test:i18n": "node test/i18n.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.28",

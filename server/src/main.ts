@@ -9,6 +9,7 @@ import cookieParser from 'cookie-parser'
 import type { Express, Request, Response } from 'express'
 
 import { AppModule } from './app.module.js'
+import { withCode } from './common/error-codes.js'
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule)
@@ -20,13 +21,17 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      // Клієнт очікує одне повідомлення, а не масив.
+      // Клієнт очікує одне повідомлення, а не масив. Разом із текстом віддаємо
+      // код виду `validation.<поле>.<правило>` — його клієнт перекладає сам,
+      // тож DTO лишаються без змін.
       exceptionFactory: (errors) => {
         const first = errors[0]
+        const constraint = first?.constraints ? Object.keys(first.constraints)[0] : undefined
         const message = first?.constraints
           ? Object.values(first.constraints)[0]
           : 'Некоректні дані запиту.'
-        return new BadRequestException(message)
+        const code = constraint ? `validation.${first.property}.${constraint}` : 'validation.unknown'
+        return new BadRequestException(withCode(message, code))
       },
     }),
   )

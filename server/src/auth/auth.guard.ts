@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common'
 import type { Request } from 'express'
 
+import { ERROR_CODES, withCode } from '../common/error-codes.js'
 import type { PublicUser } from '../types.js'
 import { AuthService } from './auth.service.js'
 
@@ -24,7 +25,7 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthedRequest>()
     const user = this.auth.userFromToken(request.cookies?.[SESSION_COOKIE])
 
-    if (!user) throw new UnauthorizedException('Потрібна авторизація.')
+    if (!user) throw new UnauthorizedException(withCode('Потрібна авторизація.', ERROR_CODES.authRequired))
 
     request.user = user
     return true

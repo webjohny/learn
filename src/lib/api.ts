@@ -26,6 +26,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    /** Код із сервера — клієнт перекладає його сам; текст лишається відкотом. */
+    readonly code?: string,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -61,11 +63,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
 
   if (!response.ok) {
-    const message =
-      (data as { message?: string; error?: string } | null)?.message ??
-      (data as { error?: string } | null)?.error ??
-      'Не вдалося виконати запит.'
-    throw new ApiError(message, response.status)
+    const body = data as { message?: string; error?: string; code?: string } | null
+    const message = body?.message ?? body?.error ?? 'Не вдалося виконати запит.'
+    throw new ApiError(message, response.status, body?.code)
   }
 
   return data as T

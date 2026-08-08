@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import type { DeckKind } from '@/lib/api'
 import { useT } from '@/lib/i18n'
+import { apiErrorMessage } from '@/lib/i18n/apiError'
 import { LANGUAGES, findLanguage, pairLabel } from '@/lib/langs'
 import { useDeck } from '@/store/useDeck'
 import { useSession } from '@/store/useSession'
@@ -67,7 +68,7 @@ export function DeckDialog({ open, onClose }: DeckDialogProps) {
       )
       onClose()
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('deck.createFailed'))
+      setError(apiErrorMessage(e, t, t('deck.createFailed')))
     } finally {
       setBusy(false)
     }
@@ -82,7 +83,7 @@ export function DeckDialog({ open, onClose }: DeckDialogProps) {
       await deleteDeck(id)
       toast(t('deck.deleted'), 'info')
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('deck.deleteFailed'))
+      setError(apiErrorMessage(e, t, t('deck.deleteFailed')))
     } finally {
       setConfirmDelete(null)
     }

@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/Icon'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { useT } from '@/lib/i18n'
+import { apiErrorMessage } from '@/lib/i18n/apiError'
 import { useCards } from '@/store/selectors'
 import { LOCAL_DECK_ID, useDeck } from '@/store/useDeck'
 import { useSession } from '@/store/useSession'
@@ -41,7 +42,7 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
       setPassword('')
       onClose()
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('auth.failed'))
+      setError(apiErrorMessage(e, t, t('auth.failed')))
     } finally {
       setBusy(false)
     }

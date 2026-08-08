@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { ERROR_CODES, withCode } from '../common/error-codes.js'
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 
 import { DatabaseService, nowISO } from '../database/database.service.js'
@@ -100,7 +101,7 @@ export class DecksService {
     const deck = this.requireOwned(deckId, userId)
 
     if (this.list(userId).length <= 1) {
-      throw new BadRequestException('Не можна видалити останню колоду.')
+      throw new BadRequestException(withCode('Не можна видалити останню колоду.', ERROR_CODES.deckLastOne))
     }
 
     const at = nowISO()
@@ -114,7 +115,7 @@ export class DecksService {
       deckId,
       userId,
     )
-    if (!row) throw new NotFoundException('Колоду не знайдено.')
+    if (!row) throw new NotFoundException(withCode('Колоду не знайдено.', ERROR_CODES.deckNotFound))
     return toDeck(row)
   }
 }

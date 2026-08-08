@@ -84,6 +84,13 @@ const weak = await alice('POST', '/api/auth/register', {
 })
 check('короткий пароль → 400', weak.status === 400, `отримано ${weak.status}`)
 check('повідомлення українською', String(weak.data?.message ?? '').includes('щонайменше 8'))
+// Код потрібен клієнту, щоб показати помилку мовою інтерфейсу; текст лишається
+// для сторонніх споживачів API, тож обидва мають бути присутні одночасно.
+check(
+  'валідація віддає код',
+  weak.data?.code === 'validation.password.minLength',
+  JSON.stringify(weak.data?.code),
+)
 
 const badEmail = await alice('POST', '/api/auth/register', {
   email: 'not-an-email',
@@ -96,6 +103,7 @@ const dup = await alice('POST', '/api/auth/register', {
   password: 'supersecret1',
 })
 check('дубль пошти → 409', dup.status === 409, `отримано ${dup.status}`)
+check('дубль пошти має код', dup.data?.code === 'auth.emailTaken', JSON.stringify(dup.data?.code))
 
 const wrongPass = await createClient()('POST', '/api/auth/login', {
   email: `alice${uniq}@example.com`,

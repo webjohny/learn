@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
+import { ERROR_CODES, withCode } from '../common/error-codes.js'
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common'
 
 import { DatabaseService, nowISO } from '../database/database.service.js'
@@ -33,7 +34,7 @@ export class AuthService {
     const email = dto.email.trim().toLowerCase()
 
     const exists = this.database.get<{ id: string }>('SELECT id FROM users WHERE email = ?', email)
-    if (exists) throw new ConflictException('Користувач із такою поштою вже існує.')
+    if (exists) throw new ConflictException(withCode('Користувач із такою поштою вже існує.', ERROR_CODES.emailTaken))
 
     const user: PublicUser = {
       id: randomUUID(),
@@ -65,7 +66,7 @@ export class AuthService {
 
     // Однакова відповідь для «немає користувача» і «невірний пароль».
     if (!row || !(await verifyPassword(dto.password, row.password_hash))) {
-      throw new UnauthorizedException('Невірна пошта або пароль.')
+      throw new UnauthorizedException(withCode('Невірна пошта або пароль.', ERROR_CODES.badCredentials))
     }
 
     return this.toPublicUser(row)
