@@ -236,6 +236,19 @@ export const uk = {
   'settings.restoreSeed': 'Повернути стартову колоду',
   'settings.restoreSeedConfirm': 'Замінити всі картки?',
   'settings.seedRestored': 'Стартову колоду відновлено',
+  'settings.wipe': 'Видалити всі картки',
+  'settings.wipeConfirm': {
+    one: 'Видалити {count} картку?',
+    few: 'Видалити {count} картки?',
+    many: 'Видалити {count} карток?',
+  },
+  'settings.wipeDone': {
+    one: 'Видалено {count} картку',
+    few: 'Видалено {count} картки',
+    many: 'Видалено {count} карток',
+  },
+  'settings.wipeNote': 'Видалення торкається лише колоди «{deck}» — інші пари лишаються цілими.',
+  'settings.wipeNoteCurrent': 'Видалення торкається лише поточної колоди — інші пари лишаються цілими.',
   'settings.storageNote': 'Дані зберігаються локально в браузері (localStorage). Регулярно робіть бекап.',
 
   'deck.title': 'Колоди',

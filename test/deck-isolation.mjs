@@ -83,6 +83,23 @@ const imported = s().importCards(
 check('імпортовано в активну пару', imported === 1 && cardsOf('deck-uk-bg').length === 2)
 check('сусідня пара не зачеплена', cardsOf('deck-uk-pl').length === 1)
 
+console.log('\nВидалення всіх карток чистить лише свою пару')
+s().setActiveDeck('deck-uk-bg')
+const bgBefore = cardsOf('deck-uk-bg').length
+const plBefore = cardsOf('deck-uk-pl').length
+const removed = s().deleteAllCards()
+check('повернуто кількість видалених', removed === bgBefore, `${removed} проти ${bgBefore}`)
+check('активна пара спорожніла', cardsOf('deck-uk-bg').length === 0)
+check('сусідня пара недоторкана', cardsOf('deck-uk-pl').length === plBefore)
+check('гостьова колода недоторкана', cardsOf(LOCAL_DECK_ID).length > 0)
+// Без deletedAt порожнеча не доїде на сервер і картки повернуться наступним pull.
+check(
+  'картки позначені deletedAt, а не викинуті',
+  s().decks['deck-uk-bg'].cards.length === bgBefore &&
+    s().decks['deck-uk-bg'].cards.every((c) => c.deletedAt),
+)
+check('повторний виклик на порожній колоді → 0', s().deleteAllCards() === 0)
+
 console.log('\nВихід з акаунта прибирає колоди акаунта')
 s().forgetServerDecks()
 check('серверні колоди зникли', !s().decks['deck-uk-bg'] && !s().decks['deck-uk-pl'])

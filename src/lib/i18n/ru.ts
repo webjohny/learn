@@ -238,6 +238,19 @@ export const ru: Record<MessageKey, Message> = {
   'settings.restoreSeed': 'Вернуть стартовую колоду',
   'settings.restoreSeedConfirm': 'Заменить все карточки?',
   'settings.seedRestored': 'Стартовая колода восстановлена',
+  'settings.wipe': 'Удалить все карточки',
+  'settings.wipeConfirm': {
+    one: 'Удалить {count} карточку?',
+    few: 'Удалить {count} карточки?',
+    many: 'Удалить {count} карточек?',
+  },
+  'settings.wipeDone': {
+    one: 'Удалена {count} карточка',
+    few: 'Удалено {count} карточки',
+    many: 'Удалено {count} карточек',
+  },
+  'settings.wipeNote': 'Удаление затрагивает только колоду «{deck}» — другие пары остаются целыми.',
+  'settings.wipeNoteCurrent': 'Удаление затрагивает только текущую колоду — другие пары остаются целыми.',
   'settings.storageNote':
     'Данные хранятся локально в браузере (localStorage). Регулярно делайте бэкап.',
 

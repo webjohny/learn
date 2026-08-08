@@ -90,6 +90,8 @@ export interface DeckState {
   importCards: (cards: Card[], mode: 'merge' | 'replace') => number
   restoreBackup: (payload: BackupPayload) => void
   loadSeed: () => void
+  /** Спорожняє активну колоду. Повертає, скільки карток видалено. */
+  deleteAllCards: () => number
   resetAllProgress: () => void
 
   setSettings: (patch: Partial<Settings>) => void
@@ -306,6 +308,28 @@ export const useDeck = create<DeckState>()(
         },
 
         loadSeed: () => patchActive(() => seededDeckData()),
+
+        /**
+         * Саме видалення, а не заміна стартовим набором: картки позначаються
+         * `deletedAt`, щоб порожнеча доїхала на сервер і не повернулася
+         * наступним pull. Зачіпає лише активну колоду — сусідні пари цілі.
+         * Денна статистика лишається: практика справді була.
+         */
+        deleteAllCards: () => {
+          const alive = get().current().cards.filter((c) => !c.deletedAt).length
+          if (!alive) return 0
+
+          const at = nowISO()
+          patchActive((data) => ({
+            cards: data.cards.map((c) =>
+              c.deletedAt ? c : { ...c, deletedAt: at, updatedAt: at },
+            ),
+            // Фільтри вказували б на категорії, яких більше немає.
+            activeCategories: [],
+            activeTags: [],
+          }))
+          return alive
+        },
 
         resetAllProgress: () =>
           patchActive((data) => ({

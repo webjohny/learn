@@ -8,6 +8,7 @@ import { findLanguage } from '@/lib/langs'
 import { getVoicesFor, onVoicesChanged, speak, ttsSupported } from '@/lib/tts'
 import { useCards, useDeckProfile } from '@/store/selectors'
 import { useDeck } from '@/store/useDeck'
+import { useSession } from '@/store/useSession'
 
 /** Фраза для перевірки голосу — своя на кожну мову колоди. */
 const SAMPLES: Record<string, string> = {
@@ -47,14 +48,17 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
   const setSettings = useDeck((s) => s.setSettings)
   const resetAllProgress = useDeck((s) => s.resetAllProgress)
   const loadSeed = useDeck((s) => s.loadSeed)
+  const deleteAllCards = useDeck((s) => s.deleteAllCards)
   const cardCount = useCards().length
   const { isLanguage, targetLang } = useDeckProfile()
   const { theme, toggle } = useTheme()
   const toast = useToast()
   const t = useT()
+  // У гостя колода без назви — тоді формулюємо без лапок.
+  const deckName = useSession((s) => s.activeDeckMeta()?.name)
 
   const [voices, setVoices] = useState(() => getVoicesFor(targetLang))
-  const [confirm, setConfirm] = useState<'progress' | 'seed' | null>(null)
+  const [confirm, setConfirm] = useState<'progress' | 'seed' | 'wipe' | null>(null)
 
   // Голоси залежать від мови колоди й вантажаться асинхронно.
   useEffect(() => {
@@ -259,7 +263,31 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
               {confirm === 'seed' ? t('settings.restoreSeedConfirm') : t('settings.restoreSeed')}
             </button>
           )}
+
+          {/* Видалення, а не заміна: чистить саме цю пару, сусідні не чіпає. */}
+          <button
+            className={`btn ${
+              confirm === 'wipe'
+                ? 'bg-rose-700 text-white hover:bg-rose-600'
+                : 'btn-soft text-rose-600 dark:text-rose-400'
+            }`}
+            disabled={cardCount === 0}
+            onClick={() => {
+              if (confirm !== 'wipe') return setConfirm('wipe')
+              const removed = deleteAllCards()
+              setConfirm(null)
+              toast(t('settings.wipeDone', { count: removed }), 'info')
+            }}
+          >
+            <Icon name="trash" size={16} />
+            {confirm === 'wipe'
+              ? t('settings.wipeConfirm', { count: cardCount })
+              : t('settings.wipe')}
+          </button>
         </div>
+        <p className="text-[11px] text-ink-400">
+          {deckName ? t('settings.wipeNote', { deck: deckName }) : t('settings.wipeNoteCurrent')}
+        </p>
         <p className="text-[11px] text-ink-400">
           {t('settings.storageNote')}
         </p>
