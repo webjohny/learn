@@ -10,6 +10,7 @@ import {
   type UpdateDeckInput,
 } from '@/lib/api'
 import { LOCAL_DECK_ID, useDeck } from './useDeck'
+import { useQuizzes } from './useQuizzes'
 
 export type AuthStatus = 'loading' | 'guest' | 'authed'
 export type SyncStatus = 'idle' | 'syncing' | 'offline' | 'error'
@@ -78,6 +79,13 @@ export const useSession = create<SessionState>()((set, get) => {
       const { user, decks } = await api.register(email, password, displayName)
       adoptDecks(decks)
       set({ status: 'authed', user, syncError: null })
+
+      // Доробок гостя переносимо рівно один раз — при створенні акаунта, у його
+      // першу колоду. Далі гостьову колоду скидаємо до стартового набору, інакше
+      // ті самі картки дісталися б і наступному акаунту в цьому браузері.
+      const first = decks[0]
+      if (first) useDeck.getState().migrateGuestCards(first.id)
+
       await get().sync()
     },
 
@@ -95,7 +103,8 @@ export const useSession = create<SessionState>()((set, get) => {
         // Навіть якщо сервер не відповів — локально виходимо.
       }
       set({ status: 'guest', user: null, decks: [], syncStatus: 'idle', lastSyncedAt: null })
-      useDeck.getState().setActiveDeck(LOCAL_DECK_ID)
+      useDeck.getState().forgetServerDecks()
+      useQuizzes.getState().forgetAccountData()
     },
 
     createDeck: async (input) => {
@@ -138,16 +147,14 @@ export const useSession = create<SessionState>()((set, get) => {
         const pulled = await api.pull(target, local?.lastSyncAt)
         deckStore.applyServerChanges(target, pulled.cards, pulled.days)
 
-        // Перший вхід на порожню серверну колоду — переносимо доробок гостя.
-        const guest = deckStore.decks[LOCAL_DECK_ID]
-        const serverEmpty = pulled.cards.length === 0 && !local?.cards.length
-        if (serverEmpty && guest?.cards.length) {
-          deckStore.setActiveDeck(target)
-          deckStore.importCards(
-            guest.cards.filter((c) => !c.deletedAt),
-            'merge',
-          )
-        }
+        // Тут колись стояло перенесення карток гостя в порожню серверну колоду.
+        // Умова «серверна колода порожня» справджувалась не лише при першому
+        // вході, а на КОЖНІЙ новій парі — тож щойно створена uk → bg одразу
+        // отримувала англійський стартовий набір. А оскільки колода гостя живе
+        // в localStorage і переживає вихід з акаунта, той самий набір діставався
+        // й наступному акаунту в цьому браузері.
+        // Картки прив'язані до колоди, у яку їх додали; спільним лишається
+        // тільки стартовий набір із `@/data/seed`.
 
         const pending = useDeck.getState().pendingChanges(target)
         const pushed =

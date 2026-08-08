@@ -13,7 +13,8 @@
     "start": "node dist-server/main.js",
     "preview": "vite preview",
     "test:api": "node server/test/smoke.mjs",
-    "typecheck": "tsc -b --noEmit && tsc -p server --noEmit"
+    "typecheck": "tsc -b --noEmit && tsc -p server --noEmit",
+    "test:deck": "node test/deck-isolation.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.28",

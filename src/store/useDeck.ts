@@ -74,6 +74,10 @@ export interface DeckState {
   setActiveDeck: (deckId: string) => void
   ensureDeck: (deckId: string, seed?: boolean) => void
   dropDeck: (deckId: string) => void
+  /** Прибирає локальні дані серверних колод — викликається при виході з акаунта. */
+  forgetServerDecks: () => void
+  /** Одноразове перенесення доробку гостя у першу колоду нового акаунта. */
+  migrateGuestCards: (deckId: string) => number
 
   rate: (cardId: string, grade: Grade, ms: number, mode: StudyMode) => void
   addCard: (draft: CardImport) => Card
@@ -155,6 +159,40 @@ export const useDeck = create<DeckState>()(
                   : state.activeDeckId,
             }
           }),
+
+        // Колоди акаунта не мають лежати в браузері після виходу: наступний
+        // користувач цього комп'ютера не повинен бачити чужі картки.
+        forgetServerDecks: () =>
+          set((state) => ({
+            decks: { [LOCAL_DECK_ID]: state.decks[LOCAL_DECK_ID] ?? seededDeckData() },
+            activeDeckId: LOCAL_DECK_ID,
+          })),
+
+        migrateGuestCards: (deckId) => {
+          const guest = get().decks[LOCAL_DECK_ID]
+          const cards = (guest?.cards ?? []).filter((c) => !c.deletedAt)
+          if (!cards.length) return 0
+
+          const at = nowISO()
+          // Перевипускаємо id: гостьові збіглися б з картками іншого акаунта,
+          // який реєструвався в цьому ж браузері, і сервер їх би відхилив.
+          const copies = cards.map((c) => ({ ...c, id: newId(), updatedAt: at }))
+
+          set((state) => {
+            const target = state.decks[deckId] ?? emptyDeckData()
+            return {
+              decks: {
+                ...state.decks,
+                [deckId]: { ...target, cards: [...target.cards, ...copies] },
+                // Гостьова колода повертається до стартового набору — перенесення
+                // одноразове й більше нікуди не потрапить.
+                [LOCAL_DECK_ID]: seededDeckData(),
+              },
+            }
+          })
+
+          return copies.length
+        },
 
         rate: (cardId, grade, ms, mode) =>
           patchActive((data) => {

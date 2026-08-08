@@ -124,8 +124,17 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
 
         {isGuestDeck && localCards.length > 0 && (
           <p className="rounded-xl bg-brand-500/8 px-3 py-2 text-[12px] text-ink-600 dark:text-ink-300">
-            💡 Ваші {localCards.length} локальних карток будуть перенесені в акаунт, якщо серверна
-            колода порожня.
+            {mode === 'register' ? (
+              <>
+                💡 Ваші {localCards.length} локальних карток переїдуть у першу колоду нового
+                акаунта. Це разова дія — далі кожна колода живе окремо.
+              </>
+            ) : (
+              <>
+                💡 Локальні картки лишаться тут і в акаунт не потраплять. Щоб перенести їх у
+                потрібну колоду, скористайтесь експортом та імпортом.
+              </>
+            )}
           </p>
         )}
 

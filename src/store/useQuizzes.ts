@@ -22,6 +22,8 @@ interface QuizState {
   /** Живі вікторини — без м'яко видалених. */
   visibleQuizzes: () => Quiz[]
   runsFor: (quizId: string) => QuizRun[]
+  /** Чистить локальні дані при виході — вікторини належать акаунту. */
+  forgetAccountData: () => void
 
   sync: () => Promise<void>
 }
@@ -86,6 +88,10 @@ export const useQuizzes = create<QuizState>()(
           const trimmed = [...mine, run].slice(-RUNS_PER_QUIZ)
           return { runs: [...others, ...trimmed] }
         }),
+
+      // Разом із курсором: інакше наступний акаунт почав би pull з чужої позначки
+      // й дозаливав би на сервер вікторини попереднього користувача.
+      forgetAccountData: () => set({ quizzes: [], runs: [], lastSyncAt: null }),
 
       visibleQuizzes: () => get().quizzes.filter((q) => !q.deletedAt),
 
