@@ -21,6 +21,8 @@ const SAMPLES: Record<string, string> = {
   cs: 'Prostě jsem odpočíval doma.',
   tr: 'Sadece evde dinlendim.',
   uk: 'Просто відпочивав удома з дружиною.',
+  bg: 'Просто си почивах вкъщи.',
+  ru: 'Просто отдыхал дома.',
 }
 
 /** `languageOnly` — клавіші, що працюють лише в мовних парах. */

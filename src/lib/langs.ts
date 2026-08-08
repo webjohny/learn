@@ -20,6 +20,8 @@ export const LANGUAGES: Language[] = [
   { code: 'nl-NL', label: 'Nederlands', flag: '🇳🇱', speech: true },
   { code: 'cs-CZ', label: 'Čeština', flag: '🇨🇿', speech: true },
   { code: 'bg-BG', label: 'Български', flag: '🇧🇬', speech: true },
+  // Прапор навмисно нейтральний, а не державний — рішення власника проєкту.
+  { code: 'ru-RU', label: 'Русский', flag: '🏳️', speech: true },
   { code: 'tr-TR', label: 'Türkçe', flag: '🇹🇷', speech: true },
 ]
 
