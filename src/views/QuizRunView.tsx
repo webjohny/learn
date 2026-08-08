@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { Icon } from '@/components/ui/Icon'
+import { useT, type Translate } from '@/lib/i18n'
 import { isCorrectSelection, type Quiz, type QuizQuestion } from '@/lib/quizTypes'
 import { useQuizzes } from '@/store/useQuizzes'
 
@@ -17,6 +18,7 @@ export function QuizRunView() {
   const { id } = useParams<{ id: string }>()
   const quiz = useQuizzes((s) => s.quizzes.find((q) => q.id === id && !q.deletedAt))
   const recordRun = useQuizzes((s) => s.recordRun)
+  const t = useT()
 
   const [index, setIndex] = useState(0)
   const [phase, setPhase] = useState<Phase>('question')
@@ -28,13 +30,13 @@ export function QuizRunView() {
   const total = quiz?.questions.length ?? 0
   const score = answers.filter((a) => a.correct).length
 
-  if (!quiz) return <Missing />
-  if (!total) return <Missing empty quizId={quiz.id} />
+  if (!quiz) return <Missing t={t} />
+  if (!total) return <Missing empty quizId={quiz.id} t={t} />
 
   const submit = () => {
     if (!question) return
     if (!selected.length) {
-      setError('Оберіть відповідь.')
+      setError(t('quiz.run.pickAnswer'))
       return
     }
     setError(null)
@@ -79,10 +81,10 @@ export function QuizRunView() {
   }
 
   if (phase === 'done') {
-    return <Summary quiz={quiz} answers={answers} score={score} total={total} onRestart={restart} />
+    return <Summary quiz={quiz} answers={answers} score={score} total={total} onRestart={restart} t={t} />
   }
 
-  if (!question) return <Missing />
+  if (!question) return <Missing t={t} />
 
   const multiple = question.type === 'multiple'
   // Фідбек показуємо на самому питанні: варіанти лишаються на екрані й
@@ -129,7 +131,7 @@ export function QuizRunView() {
         {question.code && <CodeBlock code={question.code} />}
 
         {multiple && (
-          <p className="text-[11px] text-ink-400">Можна обрати кілька варіантів</p>
+          <p className="text-[11px] text-ink-400">{t('quiz.run.multipleHint')}</p>
         )}
 
         <div className="grid gap-2">
@@ -178,12 +180,12 @@ export function QuizRunView() {
                 {/* Колір сам по собі не має нести сенс — дублюємо словом. */}
                 {missed && (
                   <span className="shrink-0 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    правильна
+                    {t('quiz.run.correctMark')}
                   </span>
                 )}
                 {wrong && (
                   <span className="shrink-0 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
-                    ваш вибір
+                    {t('quiz.run.yourPick')}
                   </span>
                 )}
               </button>
@@ -198,7 +200,7 @@ export function QuizRunView() {
             }`}
           >
             <Icon name={lastCorrect ? 'check' : 'x'} size={15} />
-            {lastCorrect ? 'Правильно' : 'Неправильно'}
+            {lastCorrect ? t('quiz.run.correct') : t('quiz.run.incorrect')}
           </p>
         )}
 
@@ -213,12 +215,12 @@ export function QuizRunView() {
         )}
         {revealed ? (
           <button className="btn-primary ml-auto px-5 py-2.5" onClick={goNext}>
-            {index + 1 >= total ? 'Підсумок' : 'Далі'}
+            {index + 1 >= total ? t('quiz.run.summary') : t('quiz.run.next')}
             <Icon name="chevronRight" size={16} />
           </button>
         ) : (
           <button className="btn-primary ml-auto px-5 py-2.5" onClick={submit}>
-            <Icon name="check" size={16} /> Відповісти
+            <Icon name="check" size={16} /> {t('quiz.run.answer')}
           </button>
         )}
       </div>
@@ -261,12 +263,14 @@ function Summary({
   score,
   total,
   onRestart,
+  t,
 }: {
   quiz: Quiz
   answers: Answered[]
   score: number
   total: number
   onRestart: () => void
+  t: Translate
 }) {
   const pct = total ? Math.round((score / total) * 100) : 0
   const survey = quiz.mode === 'survey'
@@ -275,23 +279,23 @@ function Summary({
     <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-2">
       <div className="surface flex flex-col items-center gap-3 p-6 text-center">
         <span className="text-5xl">{survey ? '✅' : pct >= 80 ? '🏆' : pct >= 50 ? '👍' : '💪'}</span>
-        <h2 className="text-xl font-semibold">Вікторину пройдено</h2>
+        <h2 className="text-xl font-semibold">{t('quiz.run.finished')}</h2>
         <p className="text-2xl font-bold tabular-nums text-brand-600 dark:text-brand-400">
           {score} / {total}
           <span className="ml-2 text-base font-medium text-ink-400">{pct}%</span>
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           <button className="btn-primary" onClick={onRestart}>
-            <Icon name="rotate" size={16} /> Ще раз
+            <Icon name="rotate" size={16} /> {t('quiz.run.retry')}
           </button>
           <Link to="/quiz" className="btn-soft">
-            <Icon name="layers" size={16} /> До переліку
+            <Icon name="layers" size={16} /> {t('quiz.run.toList')}
           </Link>
         </div>
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs font-medium text-ink-500 dark:text-ink-400">Розбір відповідей</p>
+        <p className="text-xs font-medium text-ink-500 dark:text-ink-400">{t('quiz.run.review')}</p>
         {answers.map((a, i) => (
           <div
             key={i}
@@ -308,19 +312,22 @@ function Summary({
               <p className="min-w-0 flex-1 text-[13px] font-medium">{a.question.text}</p>
             </div>
             <p className="pl-[23px] text-[12px] text-ink-500 dark:text-ink-400">
-              Ваша відповідь:{' '}
-              {a.question.answers
-                .filter((opt) => a.selected.includes(opt.id))
-                .map((opt) => opt.text)
-                .join(', ') || '—'}
+              {t('quiz.run.yourAnswer', {
+                value:
+                  a.question.answers
+                    .filter((opt) => a.selected.includes(opt.id))
+                    .map((opt) => opt.text)
+                    .join(', ') || '—',
+              })}
             </p>
             {!a.correct && (
               <p className="pl-[23px] text-[12px] text-emerald-600 dark:text-emerald-400">
-                Правильно:{' '}
-                {a.question.answers
-                  .filter((opt) => opt.correct)
-                  .map((opt) => opt.text)
-                  .join(', ')}
+                {t('quiz.run.rightAnswer', {
+                  value: a.question.answers
+                    .filter((opt) => opt.correct)
+                    .map((opt) => opt.text)
+                    .join(', '),
+                })}
               </p>
             )}
           </div>
@@ -330,21 +337,21 @@ function Summary({
   )
 }
 
-function Missing({ empty = false, quizId }: { empty?: boolean; quizId?: string }) {
+function Missing({ empty = false, quizId, t }: { empty?: boolean; quizId?: string; t: Translate }) {
   return (
     <div className="surface flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
       <Icon name="info" size={26} className="text-ink-400" />
       <p className="text-sm font-medium">
-        {empty ? 'У цій вікторині ще немає питань' : 'Вікторину не знайдено'}
+        {empty ? t('quiz.run.noQuestions') : t('quiz.run.notFound')}
       </p>
       <div className="flex gap-2">
         {empty && quizId && (
           <Link to={`/quiz/${quizId}/edit`} className="btn-primary">
-            <Icon name="edit" size={16} /> Додати питання
+            <Icon name="edit" size={16} /> {t('quiz.run.addQuestions')}
           </Link>
         )}
         <Link to="/quiz" className="btn-soft">
-          До переліку
+          {t('quiz.run.toList')}
         </Link>
       </div>
     </div>

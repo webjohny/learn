@@ -61,6 +61,8 @@ export type StudyMode = 'srs' | 'speed' | 'type'
 
 export interface Settings {
   theme: 'dark' | 'light'
+  /** Мова інтерфейсу; за замовчуванням визначається за системною */
+  locale: 'uk' | 'ru'
   /** Автоозвучення англійського боку при відкритті */
   autoSpeak: boolean
   speechRate: number

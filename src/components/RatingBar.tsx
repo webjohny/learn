@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion'
 
+import { useT, type MessageKey } from '@/lib/i18n'
 import { previewIntervals } from '@/lib/sm2'
 import type { Card, Grade } from '@/types'
 
 interface RatingOption {
   grade: Grade
-  label: string
+  label: MessageKey
   hint: string
   className: string
 }
@@ -13,28 +14,28 @@ interface RatingOption {
 const OPTIONS: RatingOption[] = [
   {
     grade: 0,
-    label: 'Забув',
+    label: 'rating.again',
     hint: '1',
     className:
       'border-rose-500/25 bg-rose-500/10 text-rose-600 hover:bg-rose-500/18 dark:text-rose-300',
   },
   {
     grade: 1,
-    label: 'Важко',
+    label: 'rating.hard',
     hint: '2',
     className:
       'border-amber-500/25 bg-amber-500/10 text-amber-600 hover:bg-amber-500/18 dark:text-amber-300',
   },
   {
     grade: 2,
-    label: 'Добре',
+    label: 'rating.good',
     hint: '3',
     className:
       'border-emerald-500/25 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/18 dark:text-emerald-300',
   },
   {
     grade: 3,
-    label: 'Легко',
+    label: 'rating.easy',
     hint: '4',
     className:
       'border-sky-500/25 bg-sky-500/10 text-sky-600 hover:bg-sky-500/18 dark:text-sky-300',
@@ -49,6 +50,7 @@ interface RatingBarProps {
 }
 
 export function RatingBar({ card, onRate, showIntervals = true }: RatingBarProps) {
+  const t = useT()
   const intervals = previewIntervals(card)
 
   return (
@@ -65,7 +67,7 @@ export function RatingBar({ card, onRate, showIntervals = true }: RatingBarProps
           className={`btn flex-col gap-0.5 border py-2.5 sm:py-3 ${option.className}`}
         >
           <span className="flex items-center gap-1.5 text-[13px] font-semibold sm:text-sm">
-            {option.label}
+            {t(option.label)}
             <span className="kbd hidden sm:inline-flex">{option.hint}</span>
           </span>
           {showIntervals && (

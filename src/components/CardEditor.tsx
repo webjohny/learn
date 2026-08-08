@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Icon } from '@/components/ui/Icon'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import { useT, type MessageKey } from '@/lib/i18n'
 import { useCategories } from '@/store/selectors'
 import { useDeck } from '@/store/useDeck'
 import type { Card, Difficulty } from '@/types'
@@ -32,10 +33,10 @@ const EMPTY: Draft = {
   note: '',
 }
 
-const DIFFICULTIES: { value: Difficulty; label: string }[] = [
-  { value: 'easy', label: 'Легка' },
-  { value: 'medium', label: 'Середня' },
-  { value: 'hard', label: 'Складна' },
+const DIFFICULTIES: { value: Difficulty; label: MessageKey }[] = [
+  { value: 'easy', label: 'cardEditor.easy' },
+  { value: 'medium', label: 'cardEditor.medium' },
+  { value: 'hard', label: 'cardEditor.hard' },
 ]
 
 export function CardEditor({ open, card, onClose }: CardEditorProps) {
@@ -44,6 +45,7 @@ export function CardEditor({ open, card, onClose }: CardEditorProps) {
   const deleteCard = useDeck((s) => s.deleteCard)
   const categories = useCategories()
   const toast = useToast()
+  const t = useT()
 
   const [draft, setDraft] = useState<Draft>(EMPTY)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -73,7 +75,7 @@ export function CardEditor({ open, card, onClose }: CardEditorProps) {
   const save = () => {
     if (!valid) return
     const payload = {
-      category: draft.category.trim() || 'Без категорії',
+      category: draft.category.trim() || t('cardEditor.noCategory'),
       front: draft.front.trim(),
       back: draft.back.trim(),
       tags: draft.tags,
@@ -89,10 +91,10 @@ export function CardEditor({ open, card, onClose }: CardEditorProps) {
           .map((t) => t.replace(/^#/, '').toLowerCase())
           .filter(Boolean),
       })
-      toast('Картку оновлено')
+      toast(t('cardEditor.updated'))
     } else {
       addCard(payload)
-      toast('Картку додано')
+      toast(t('cardEditor.added'))
     }
     onClose()
   }
@@ -101,7 +103,7 @@ export function CardEditor({ open, card, onClose }: CardEditorProps) {
     if (!card) return
     if (!confirmDelete) return setConfirmDelete(true)
     deleteCard(card.id)
-    toast('Картку видалено', 'info')
+    toast(t('cardEditor.deleted'), 'info')
     onClose()
   }
 
@@ -109,8 +111,8 @@ export function CardEditor({ open, card, onClose }: CardEditorProps) {
     <Modal
       open={open}
       onClose={onClose}
-      title={card ? 'Редагувати картку' : 'Нова картка'}
-      description="Оберніть ключову конструкцію в *[дужки]*, щоб сховати її під блюром."
+      title={card ? t('cardEditor.titleEdit') : t('cardEditor.titleNew')}
+      description={t('cardEditor.description')}
       footer={
         <>
           {card && (
@@ -123,30 +125,30 @@ export function CardEditor({ open, card, onClose }: CardEditorProps) {
               onClick={remove}
             >
               <Icon name="trash" size={15} />
-              {confirmDelete ? 'Точно видалити?' : 'Видалити'}
+              {confirmDelete ? t('common.sureDelete') : t('common.delete')}
             </button>
           )}
           <button className="btn-soft" onClick={onClose}>
-            Скасувати
+            {t('common.cancel')}
           </button>
           <button className="btn-primary" onClick={save} disabled={!valid}>
-            <Icon name="check" size={16} /> Зберегти
+            <Icon name="check" size={16} /> {t('common.save')}
           </button>
         </>
       }
     >
       <div className="space-y-4">
-        <Labeled label="Українською (питання)">
+        <Labeled label={t('cardEditor.question')}>
           <textarea
             className="field min-h-20 resize-y"
             value={draft.front}
             onChange={(e) => set('front', e.target.value)}
-            placeholder="Просто відпочивав удома з дружиною."
+            placeholder={t('cardEditor.questionPlaceholder')}
             autoFocus
           />
         </Labeled>
 
-        <Labeled label="English (відповідь)">
+        <Labeled label={t('cardEditor.answer')}>
           <textarea
             className="field min-h-20 resize-y"
             value={draft.back}
@@ -156,7 +158,7 @@ export function CardEditor({ open, card, onClose }: CardEditorProps) {
         </Labeled>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Labeled label="Категорія">
+          <Labeled label={t('cardEditor.category')}>
             <input
               className="field"
               list="editor-categories"
@@ -171,7 +173,7 @@ export function CardEditor({ open, card, onClose }: CardEditorProps) {
             </datalist>
           </Labeled>
 
-          <Labeled label="Теги (через кому)">
+          <Labeled label={t('cardEditor.tags')}>
             <input
               className="field"
               value={draft.tags}
@@ -181,16 +183,16 @@ export function CardEditor({ open, card, onClose }: CardEditorProps) {
           </Labeled>
         </div>
 
-        <Labeled label="Підказка щодо вживання (необов’язково)">
+        <Labeled label={t('cardEditor.note', { optional: t('common.optional') })}>
           <input
             className="field"
             value={draft.note}
             onChange={(e) => set('note', e.target.value)}
-            placeholder="kick back = розслаблятися"
+            placeholder={t('cardEditor.notePlaceholder')}
           />
         </Labeled>
 
-        <Labeled label="Складність">
+        <Labeled label={t('cardEditor.difficulty')}>
           <div className="flex gap-1.5">
             {DIFFICULTIES.map((option) => (
               <button
@@ -202,7 +204,7 @@ export function CardEditor({ open, card, onClose }: CardEditorProps) {
                     : 'border-ink-200 text-ink-500 dark:border-white/10 dark:text-ink-400'
                 }`}
               >
-                {option.label}
+                {t(option.label)}
               </button>
             ))}
           </div>

@@ -6,6 +6,7 @@ import { Icon } from '@/components/ui/Icon'
 import { useToast } from '@/components/ui/Toast'
 import { download } from '@/lib/deck'
 import { formatRelative } from '@/lib/date'
+import { useT } from '@/lib/i18n'
 import type { Quiz } from '@/lib/quizTypes'
 import { useQuizzes } from '@/store/useQuizzes'
 
@@ -16,6 +17,7 @@ export function QuizListView() {
   const deleteQuiz = useQuizzes((s) => s.deleteQuiz)
   const navigate = useNavigate()
   const toast = useToast()
+  const t = useT()
 
   const [importOpen, setImportOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
@@ -28,7 +30,7 @@ export function QuizListView() {
       .sort((a, b) => b.finishedAt.localeCompare(a.finishedAt))[0]
 
   const create = () => {
-    const quiz = createQuiz('Нова вікторина', 'graded')
+    const quiz = createQuiz(t('quiz.list.newTitle'), 'graded')
     navigate(`/quiz/${quiz.id}/edit`)
   }
 
@@ -50,7 +52,7 @@ export function QuizListView() {
     }
     const slug = quiz.title.toLowerCase().replace(/[^\wа-яіїєґ]+/gi, '-').slice(0, 40)
     download(`quiz-${slug || 'export'}.json`, JSON.stringify(payload, null, 2))
-    toast('Вікторину вивантажено')
+    toast(t('quiz.list.exported'))
   }
 
   const remove = (quiz: Quiz) => {
@@ -60,21 +62,21 @@ export function QuizListView() {
     }
     deleteQuiz(quiz.id)
     setConfirmDelete(null)
-    toast('Вікторину видалено', 'info')
+    toast(t('quiz.list.deleted'), 'info')
   }
 
   return (
     <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-2">
       <div className="flex flex-wrap items-center gap-2">
         <button className="btn-primary" onClick={create}>
-          <Icon name="plus" size={16} /> Створити
+          <Icon name="plus" size={16} /> {t('quiz.list.create')}
         </button>
         <button className="btn-soft" onClick={() => setImportOpen(true)}>
-          <Icon name="upload" size={16} /> Імпортувати JSON
+          <Icon name="upload" size={16} /> {t('quiz.list.import')}
         </button>
         {visible.length > 0 && (
           <span className="ml-auto text-[11px] text-ink-400">
-            {visible.length} {visible.length === 1 ? 'вікторина' : 'вікторин'}
+            {t('quiz.list.count', { count: visible.length })}
           </span>
         )}
       </div>
@@ -85,10 +87,9 @@ export function QuizListView() {
             <Icon name="target" size={22} />
           </span>
           <div className="space-y-1">
-            <h2 className="text-base font-semibold">Тут поки порожньо</h2>
+            <h2 className="text-base font-semibold">{t('quiz.list.emptyTitle')}</h2>
             <p className="mx-auto max-w-sm text-[13px] text-ink-500 dark:text-ink-400">
-              Вікторини — окремий тренажер: питання з варіантами відповідей, без
-              інтервальних повторень. Створіть свою або завантажте готову з JSON.
+              {t('quiz.list.emptyText')}
             </p>
           </div>
         </div>
@@ -102,17 +103,15 @@ export function QuizListView() {
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="truncate text-sm font-semibold">{quiz.title}</span>
-                    <span className="chip">{quiz.mode === 'graded' ? 'з оцінкою' : 'опитування'}</span>
+                    <span className="chip">{quiz.mode === 'graded' ? t('quiz.list.graded') : t('quiz.list.survey')}</span>
                   </div>
                   <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-400">
                     <span>
-                      {quiz.questions.length}{' '}
-                      {quiz.questions.length === 1 ? 'питання' : 'питань'}
+                      {t('quiz.list.questions', { count: quiz.questions.length })}
                     </span>
                     {lastRun && (
                       <span>
-                        останній результат {lastRun.score}/{lastRun.total} ·{' '}
-                        {formatRelative(lastRun.finishedAt)}
+                        {t('quiz.list.lastRun', { score: lastRun.score, total: lastRun.total, when: formatRelative(lastRun.finishedAt) })}
                       </span>
                     )}
                   </p>
@@ -124,21 +123,21 @@ export function QuizListView() {
                     className={`btn-soft px-2.5 py-1.5 text-xs ${
                       empty ? 'pointer-events-none opacity-40' : ''
                     }`}
-                    title={empty ? 'Спершу додайте питання' : 'Пройти'}
+                    title={empty ? t('quiz.list.addFirst') : t('quiz.list.run')}
                   >
-                    <Icon name="play" size={14} /> Пройти
+                    <Icon name="play" size={14} /> {t('quiz.list.run')}
                   </Link>
                   <Link
                     to={`/quiz/${quiz.id}/edit`}
                     className="btn-ghost px-2 py-1"
-                    title="Редагувати"
+                    title={t('common.edit')}
                   >
                     <Icon name="edit" size={15} />
                   </Link>
                   <button
                     className="btn-ghost px-2 py-1"
                     onClick={() => exportQuiz(quiz)}
-                    title="Експорт JSON"
+                    title={t('quiz.list.exportJson')}
                   >
                     <Icon name="download" size={15} />
                   </button>
@@ -149,10 +148,10 @@ export function QuizListView() {
                         : 'text-rose-500 hover:bg-rose-500/10'
                     }`}
                     onClick={() => remove(quiz)}
-                    title="Видалити"
+                    title={t('common.delete')}
                   >
                     <Icon name="trash" size={14} />
-                    {confirmDelete === quiz.id && 'Точно?'}
+                    {confirmDelete === quiz.id && t('common.sure')}
                   </button>
                 </div>
               </div>

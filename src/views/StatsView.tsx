@@ -2,13 +2,13 @@ import { useMemo } from 'react'
 
 import { Icon, type IconName } from '@/components/ui/Icon'
 import { dayKey, formatDuration, formatRelative, lastNDays, shiftDay } from '@/lib/date'
+import { useT, type Translate } from '@/lib/i18n'
 import { isNew } from '@/lib/sm2'
 import { useCards, useDays, useLog, useMaturity, useToday } from '@/store/selectors'
 import { useQuizzes } from '@/store/useQuizzes'
 
 const HISTORY_DAYS = 14
 const FORECAST_DAYS = 7
-const WEEKDAYS = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
 
 export function StatsView() {
   const days = useDays()
@@ -16,6 +16,8 @@ export function StatsView() {
   const log = useLog()
   const today = useToday()
   const maturity = useMaturity()
+  const t = useT()
+  const WEEKDAYS = t('stats.weekdays').split(',')
 
   const history = useMemo(
     () => lastNDays(HISTORY_DAYS).map((date) => ({ date, reviews: days[date]?.reviews ?? 0 })),
@@ -71,14 +73,14 @@ export function StatsView() {
   return (
     <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-2">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Tile icon="flame" value={today.streak} label="днів поспіль" tone="orange" />
-        <Tile icon="clock" value={formatDuration(today.seconds)} label="практики сьогодні" />
-        <Tile icon="target" value={`${today.accuracy}%`} label="точність сьогодні" tone="emerald" />
-        <Tile icon="cards" value={today.reviews} label="повторень сьогодні" tone="brand" />
+        <Tile icon="flame" value={today.streak} label={t('stats.streakLabel')} tone="orange" />
+        <Tile icon="clock" value={formatDuration(today.seconds)} label={t('stats.todayTime')} />
+        <Tile icon="target" value={`${today.accuracy}%`} label={t('stats.todayAccuracy')} tone="emerald" />
+        <Tile icon="cards" value={today.reviews} label={t('stats.todayReviews')} tone="brand" />
       </div>
 
       <section className="surface p-4">
-        <SectionTitle icon="chart" title="Активність за 2 тижні" hint={`${totals.reviews} повторень усього`} />
+        <SectionTitle icon="chart" title={t('stats.activity')} hint={t('stats.activityHint', { count: totals.reviews })} />
         <div className="mt-4 flex h-32 items-stretch gap-1.5">
           {history.map((day) => {
             const height = day.reviews ? Math.max(8, (day.reviews / maxReviews) * 100) : 3
@@ -115,21 +117,21 @@ export function StatsView() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <section className="surface p-4">
-          <SectionTitle icon="layers" title="Стан колоди" hint={`${maturity.total} карток`} />
+          <SectionTitle icon="layers" title={t('stats.deckState')} hint={t('common.cardsCount', { count: maturity.total })} />
           <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-ink-900/8 dark:bg-white/8">
             <Segment value={maturity.mature} total={maturity.total} className="bg-emerald-500" />
             <Segment value={maturity.young} total={maturity.total} className="bg-brand-500" />
             <Segment value={maturity.fresh} total={maturity.total} className="bg-ink-400/60" />
           </div>
           <ul className="mt-3 space-y-1.5 text-[13px]">
-            <Legend color="bg-emerald-500" label="Засвоєні (21+ днів)" value={maturity.mature} />
-            <Legend color="bg-brand-500" label="У процесі" value={maturity.young} />
-            <Legend color="bg-ink-400/60" label="Ще не вивчені" value={maturity.fresh} />
+            <Legend color="bg-emerald-500" label={t('stats.mature')} value={maturity.mature} />
+            <Legend color="bg-brand-500" label={t('stats.young')} value={maturity.young} />
+            <Legend color="bg-ink-400/60" label={t('stats.fresh')} value={maturity.fresh} />
           </ul>
         </section>
 
         <section className="surface p-4">
-          <SectionTitle icon="clock" title="Прогноз на тиждень" hint="скільки карток чекає" />
+          <SectionTitle icon="clock" title={t('stats.forecast')} hint={t('stats.forecastHint')} />
           <div className="mt-4 flex h-24 items-stretch gap-1.5">
             {forecast.map((day, i) => (
               <div
@@ -147,7 +149,7 @@ export function StatsView() {
                     }}
                   />
                 </div>
-                <span className="text-[9px] text-ink-400">{i === 0 ? 'сьог' : `+${i}`}</span>
+                <span className="text-[9px] text-ink-400">{i === 0 ? t('stats.today') : `+${i}`}</span>
               </div>
             ))}
           </div>
@@ -156,17 +158,17 @@ export function StatsView() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <section className="surface p-4">
-          <SectionTitle icon="award" title="Загалом" />
+          <SectionTitle icon="award" title={t('stats.total')} />
           <dl className="mt-3 space-y-2 text-[13px]">
-            <Row label="Повторень" value={totals.reviews} />
-            <Row label="Середня точність" value={`${totals.accuracy}%`} />
-            <Row label="Час практики" value={formatDuration(totals.seconds)} />
-            <Row label="Активних днів" value={totals.activeDays} />
+            <Row label={t('stats.reviews')} value={totals.reviews} />
+            <Row label={t('stats.avgAccuracy')} value={`${totals.accuracy}%`} />
+            <Row label={t('stats.practiceTime')} value={formatDuration(totals.seconds)} />
+            <Row label={t('stats.activeDays')} value={totals.activeDays} />
           </dl>
         </section>
 
         <section className="surface p-4">
-          <SectionTitle icon="zap" title="Найскладніші фрази" hint="за кількістю «Забув»" />
+          <SectionTitle icon="zap" title={t('stats.hardest')} hint={t('stats.hardestHint')} />
           {hardest.length ? (
             <ul className="mt-3 space-y-2">
               {hardest.map(({ card, count }) => (
@@ -180,13 +182,13 @@ export function StatsView() {
             </ul>
           ) : (
             <p className="mt-3 text-[13px] text-ink-400">
-              Поки що жодної забутої картки — так тримати.
+              {t('stats.noLapses')}
             </p>
           )}
         </section>
       </div>
 
-      <QuizStats />
+      <QuizStats t={t} />
     </div>
   )
 }
@@ -195,7 +197,7 @@ export function StatsView() {
  * Окрема секція: вікторини не пов'язані з картками, тож їхні числа не
  * зливаються з метриками SM-2 вище.
  */
-function QuizStats() {
+function QuizStats({ t }: { t: Translate }) {
   const quizzes = useQuizzes((s) => s.quizzes)
   const runs = useQuizzes((s) => s.runs)
 
@@ -211,14 +213,14 @@ function QuizStats() {
   }, [runs])
 
   const titleOf = (quizId: string) =>
-    quizzes.find((q) => q.id === quizId)?.title ?? 'Видалена вікторина'
+    quizzes.find((q) => q.id === quizId)?.title ?? t('stats.quizDeleted')
 
   return (
     <section className="surface p-4">
       <SectionTitle
         icon="target"
-        title="Вікторини"
-        hint={totals.runs ? `${totals.runs} прогонів · ${totals.accuracy}% точності` : undefined}
+        title={t('stats.quizzes')}
+        hint={totals.runs ? t('stats.quizHint', { runs: totals.runs, accuracy: totals.accuracy }) : undefined}
       />
       {recent.length ? (
         <ul className="mt-3 space-y-2">
@@ -236,7 +238,7 @@ function QuizStats() {
         </ul>
       ) : (
         <p className="mt-3 text-[13px] text-ink-400">
-          Жодного прогону. Вікторини живуть окремо від карток — на прогрес колоди вони не впливають.
+          {t('stats.quizEmpty')}
         </p>
       )}
     </section>

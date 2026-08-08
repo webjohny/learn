@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Icon } from '@/components/ui/Icon'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import { useT } from '@/lib/i18n'
 import { useCards } from '@/store/selectors'
 import { LOCAL_DECK_ID, useDeck } from '@/store/useDeck'
 import { useSession } from '@/store/useSession'
@@ -21,6 +22,7 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
   const localCards = useCards()
   const toast = useToast()
 
+  const t = useT()
   const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -35,11 +37,11 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
       if (mode === 'login') await login(email.trim(), password)
       else await register(email.trim(), password, displayName.trim() || undefined)
 
-      toast(mode === 'login' ? 'Ви увійшли' : 'Акаунт створено')
+      toast(mode === 'login' ? t('auth.loggedIn') : t('auth.registered'))
       setPassword('')
       onClose()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не вдалося виконати запит.')
+      setError(e instanceof Error ? e.message : t('auth.failed'))
     } finally {
       setBusy(false)
     }
@@ -51,8 +53,8 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
     <Modal
       open={open}
       onClose={onClose}
-      title={mode === 'login' ? 'Вхід в акаунт' : 'Створення акаунта'}
-      description="Синхронізація колод між пристроями. Без акаунта все працює локально."
+      title={mode === 'login' ? t('auth.loginTitle') : t('auth.registerTitle')}
+      description={t('auth.description')}
       size="sm"
       footer={
         <>
@@ -63,13 +65,13 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
               setError(null)
             }}
           >
-            {mode === 'login' ? 'Немає акаунта? Створити' : 'Вже є акаунт? Увійти'}
+            {mode === 'login' ? t('auth.toRegister') : t('auth.toLogin')}
           </button>
           <button className="btn-soft" onClick={onClose}>
-            Скасувати
+            {t('common.cancel')}
           </button>
           <button className="btn-primary" onClick={submit} disabled={!canSubmit || busy}>
-            {busy ? 'Зачекайте…' : mode === 'login' ? 'Увійти' : 'Створити'}
+            {busy ? t('common.loading') : mode === 'login' ? t('account.login') : t('common.create')}
           </button>
         </>
       }
@@ -82,18 +84,18 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
         }}
       >
         {mode === 'register' && (
-          <Field label="Ім'я (необов'язково)">
+          <Field label={t('auth.name', { optional: t('common.optional') })}>
             <input
               className="field"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Гера"
+              placeholder={t('auth.namePlaceholder')}
               autoComplete="nickname"
             />
           </Field>
         )}
 
-        <Field label="Пошта">
+        <Field label={t('auth.email')}>
           <input
             className="field"
             type="email"
@@ -105,7 +107,7 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
           />
         </Field>
 
-        <Field label={mode === 'register' ? 'Пароль (від 8 символів)' : 'Пароль'}>
+        <Field label={mode === 'register' ? t('auth.passwordMin') : t('auth.password')}>
           <input
             className="field"
             type="password"
@@ -125,15 +127,9 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
         {isGuestDeck && localCards.length > 0 && (
           <p className="rounded-xl bg-brand-500/8 px-3 py-2 text-[12px] text-ink-600 dark:text-ink-300">
             {mode === 'register' ? (
-              <>
-                💡 Ваші {localCards.length} локальних карток переїдуть у першу колоду нового
-                акаунта. Це разова дія — далі кожна колода живе окремо.
-              </>
+              t('auth.migrateHint', { count: localCards.length })
             ) : (
-              <>
-                💡 Локальні картки лишаться тут і в акаунт не потраплять. Щоб перенести їх у
-                потрібну колоду, скористайтесь експортом та імпортом.
-              </>
+              t('auth.noMigrateHint')
             )}
           </p>
         )}

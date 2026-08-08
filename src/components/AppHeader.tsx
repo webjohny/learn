@@ -4,19 +4,20 @@ import { AccountMenu } from '@/components/AccountMenu'
 import { Icon, type IconName } from '@/components/ui/Icon'
 import { useTheme } from '@/hooks/useMisc'
 import { formatDuration } from '@/lib/date'
+import { useT, type MessageKey } from '@/lib/i18n'
 import { useCounts, useToday } from '@/store/selectors'
 
 export interface NavItem {
   path: string
-  label: string
+  label: MessageKey
   icon: IconName
 }
 
 export const NAV: NavItem[] = [
-  { path: '/', label: 'Навчання', icon: 'cards' },
-  { path: '/browse', label: 'Колода', icon: 'layers' },
-  { path: '/stats', label: 'Статистика', icon: 'chart' },
-  { path: '/settings', label: 'Налаштування', icon: 'settings' },
+  { path: '/', label: 'nav.study', icon: 'cards' },
+  { path: '/browse', label: 'nav.browse', icon: 'layers' },
+  { path: '/stats', label: 'nav.stats', icon: 'chart' },
+  { path: '/settings', label: 'nav.settings', icon: 'settings' },
 ]
 
 interface AppHeaderProps {
@@ -27,6 +28,7 @@ export function AppHeader({ onImport }: AppHeaderProps) {
   const counts = useCounts()
   const today = useToday()
   const { theme, toggle } = useTheme()
+  const t = useT()
 
   return (
     <header className="safe-t sticky top-0 z-30 border-b border-ink-200/70 bg-ink-50/85 backdrop-blur-xl dark:border-white/8 dark:bg-ink-950/80">
@@ -37,22 +39,22 @@ export function AppHeader({ onImport }: AppHeaderProps) {
           </span>
           <span className="hidden leading-tight sm:block">
             <span className="block text-sm font-semibold">Phrase Deck</span>
-            <span className="block text-[11px] text-ink-400">розмовна англійська</span>
+            <span className="block text-[11px] text-ink-400">{t('header.subtitle')}</span>
           </span>
         </Link>
 
         <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 sm:gap-2">
-          <Stat icon="target" value={counts.queued} label="на сьогодні" tone="brand" />
+          <Stat icon="target" value={counts.queued} label={t('header.due')} tone="brand" />
           <Stat
             icon="flame"
             value={today.streak}
-            label={today.streak === 1 ? 'день' : 'днів'}
+            label={t('header.streak', { count: today.streak })}
             tone={today.streak > 0 ? 'flame' : 'muted'}
           />
           <Stat
             icon="clock"
             value={formatDuration(today.seconds)}
-            label="сьогодні"
+            label={t('header.today')}
             tone="muted"
             wide
           />
@@ -70,19 +72,19 @@ export function AppHeader({ onImport }: AppHeaderProps) {
                   : 'border border-brand-500/30 text-brand-600 hover:bg-brand-500/10 dark:text-brand-400'
               }`
             }
-            title="Вікторини — окремий тренажер"
+            title={t('nav.quizzesHint')}
           >
             <Icon name="target" size={15} />
-            <span className="hidden sm:inline">Вікторини</span>
+            <span className="hidden sm:inline">{t('nav.quizzes')}</span>
           </NavLink>
           <AccountMenu />
-          <button className="btn-ghost px-2" onClick={onImport} title="Імпорт / експорт JSON">
+          <button className="btn-ghost px-2" onClick={onImport} title={t('header.import')}>
             <Icon name="upload" />
           </button>
           <button
             className="btn-ghost px-2"
             onClick={toggle}
-            title={theme === 'dark' ? 'Світла тема' : 'Темна тема'}
+            title={theme === 'dark' ? t('header.themeLight') : t('header.themeDark')}
           >
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
           </button>
@@ -106,7 +108,7 @@ export function AppHeader({ onImport }: AppHeaderProps) {
             }
           >
             <Icon name={item.icon} size={16} />
-            {item.label}
+            {t(item.label)}
           </NavLink>
         ))}
       </nav>

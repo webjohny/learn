@@ -5,6 +5,7 @@ import { DeckDialog } from '@/components/DeckDialog'
 import { Icon } from '@/components/ui/Icon'
 import { useToast } from '@/components/ui/Toast'
 import { pairLabel } from '@/lib/langs'
+import { useT, type MessageKey } from '@/lib/i18n'
 import { LOCAL_DECK_ID, useDeck } from '@/store/useDeck'
 import { useSession } from '@/store/useSession'
 
@@ -18,6 +19,7 @@ export function AccountMenu() {
   const activeDeckId = useDeck((s) => s.activeDeckId)
   const setActiveDeck = useDeck((s) => s.setActiveDeck)
   const toast = useToast()
+  const t = useT()
 
   const [open, setOpen] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
@@ -44,7 +46,7 @@ export function AccountMenu() {
           disabled={status === 'loading'}
         >
           <Icon name="user" size={15} />
-          <span className="hidden sm:inline">Увійти</span>
+          <span className="hidden sm:inline">{t('account.login')}</span>
         </button>
         <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />
       </>
@@ -70,12 +72,12 @@ export function AccountMenu() {
           <div className="border-b border-ink-200/70 px-3.5 py-2.5 dark:border-white/8">
             <p className="truncate text-[13px] font-semibold">{user?.displayName}</p>
             <p className="truncate text-[11px] text-ink-400">{user?.email}</p>
-            <p className="mt-1 text-[11px] text-ink-400">{syncLabel(syncStatus)}</p>
+            <p className="mt-1 text-[11px] text-ink-400">{t(syncLabel(syncStatus))}</p>
           </div>
 
           <div className="max-h-64 overflow-y-auto py-1.5">
             <p className="px-3.5 py-1 text-[10px] font-semibold tracking-wide text-ink-400 uppercase">
-              Колоди
+              {t('account.decks')}
             </p>
             {decks.map((deck) => (
               <button
@@ -100,7 +102,7 @@ export function AccountMenu() {
           <div className="border-t border-ink-200/70 p-1.5 dark:border-white/8">
             <MenuItem
               icon="plus"
-              label="Нова колода"
+              label={t('account.newDeck')}
               onClick={() => {
                 setDeckDialogOpen(true)
                 setOpen(false)
@@ -108,7 +110,7 @@ export function AccountMenu() {
             />
             <MenuItem
               icon="rotate"
-              label="Синхронізувати зараз"
+              label={t('account.syncNow')}
               onClick={() => {
                 void useSession.getState().sync()
                 setOpen(false)
@@ -116,12 +118,12 @@ export function AccountMenu() {
             />
             <MenuItem
               icon="undo"
-              label="Вийти"
+              label={t('account.logout')}
               tone="danger"
               onClick={async () => {
                 await logout()
                 setOpen(false)
-                toast('Ви вийшли з акаунта', 'info')
+                toast(t('account.loggedOut'), 'info')
               }}
             />
           </div>
@@ -170,11 +172,11 @@ function SyncDot({ status }: { status: string }) {
   return <span className={`size-2 shrink-0 rounded-full ${dots[status] ?? dots.idle}`} />
 }
 
-function syncLabel(status: string): string {
-  if (status === 'syncing') return 'Синхронізація…'
-  if (status === 'offline') return 'Офлайн — зміни збережуться локально'
-  if (status === 'error') return 'Помилка синхронізації'
-  return 'Синхронізовано'
+function syncLabel(status: string): MessageKey {
+  if (status === 'syncing') return 'account.syncing'
+  if (status === 'offline') return 'account.offline'
+  if (status === 'error') return 'account.syncError'
+  return 'account.synced'
 }
 
 export { LOCAL_DECK_ID }

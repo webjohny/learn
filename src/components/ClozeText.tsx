@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import { useT } from '@/lib/i18n'
 import { parseCloze } from '@/lib/text'
 
 interface ClozeTextProps {
@@ -12,6 +13,7 @@ interface ClozeTextProps {
 /** Рендерить фразу, ховаючи `*[фрагменти]*` під блюром до кліку по них. */
 export function ClozeText({ text, blur, className = '' }: ClozeTextProps) {
   const segments = parseCloze(text)
+  const t = useT()
   const [revealed, setRevealed] = useState<Set<number>>(new Set())
 
   useEffect(() => setRevealed(new Set()), [text, blur])
@@ -37,7 +39,7 @@ export function ClozeText({ text, blur, className = '' }: ClozeTextProps) {
                 ? 'cursor-pointer bg-brand-500/20 text-transparent blur-[6px] select-none'
                 : 'cursor-default bg-brand-500/15 text-brand-600 dark:text-brand-400',
             ].join(' ')}
-            aria-label={isHidden ? 'Показати приховане слово' : segment.text}
+            aria-label={isHidden ? t('card.revealHidden') : segment.text}
             tabIndex={isHidden ? 0 : -1}
           >
             {segment.text}

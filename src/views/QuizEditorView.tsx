@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import { Icon } from '@/components/ui/Icon'
 import { newId } from '@/lib/deck'
+import { useT } from '@/lib/i18n'
 import type { QuizQuestion } from '@/lib/quizTypes'
 import { emptyQuestion, useQuizzes } from '@/store/useQuizzes'
 
@@ -9,14 +10,15 @@ export function QuizEditorView() {
   const { id } = useParams<{ id: string }>()
   const quiz = useQuizzes((s) => s.quizzes.find((q) => q.id === id && !q.deletedAt))
   const updateQuiz = useQuizzes((s) => s.updateQuiz)
+  const t = useT()
 
   if (!quiz) {
     return (
       <div className="surface flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
         <Icon name="info" size={26} className="text-ink-400" />
-        <p className="text-sm font-medium">Вікторину не знайдено</p>
+        <p className="text-sm font-medium">{t('quiz.run.notFound')}</p>
         <Link to="/quiz" className="btn-soft">
-          До переліку
+          {t('quiz.run.toList')}
         </Link>
       </div>
     )
@@ -59,7 +61,7 @@ export function QuizEditorView() {
     <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-2">
       <div className="flex items-center gap-2">
         <Link to="/quiz" className="btn-ghost px-2 py-1.5 text-[13px]">
-          <Icon name="chevronDown" size={15} className="rotate-90" /> До переліку
+          <Icon name="chevronDown" size={15} className="rotate-90" /> {t('quiz.editor.back')}
         </Link>
         <Link
           to={`/quiz/${quiz.id}/run`}
@@ -67,13 +69,13 @@ export function QuizEditorView() {
             quiz.questions.length ? '' : 'pointer-events-none opacity-40'
           }`}
         >
-          <Icon name="play" size={14} /> Пройти
+          <Icon name="play" size={14} /> {t('quiz.list.run')}
         </Link>
       </div>
 
       <section className="surface space-y-3 p-4">
         <label className="block space-y-1.5">
-          <span className="text-xs font-medium text-ink-500 dark:text-ink-400">Назва</span>
+          <span className="text-xs font-medium text-ink-500 dark:text-ink-400">{t('quiz.editor.name')}</span>
           <input
             className="field"
             value={quiz.title}
@@ -83,7 +85,7 @@ export function QuizEditorView() {
 
         <label className="block space-y-1.5">
           <span className="text-xs font-medium text-ink-500 dark:text-ink-400">
-            Опис (необов'язково)
+            {t('quiz.editor.description', { optional: t('common.optional') })}
           </span>
           <input
             className="field"
@@ -93,19 +95,19 @@ export function QuizEditorView() {
         </label>
 
         <div className="space-y-1.5">
-          <span className="text-xs font-medium text-ink-500 dark:text-ink-400">Режим</span>
+          <span className="text-xs font-medium text-ink-500 dark:text-ink-400">{t('quiz.editor.mode')}</span>
           <div className="grid gap-2 sm:grid-cols-2">
             <ModeOption
               active={quiz.mode === 'graded'}
               onClick={() => updateQuiz(quiz.id, { mode: 'graded' })}
-              title="З оцінкою"
-              description="Правильність показується одразу після кожного питання"
+              title={t('quiz.editor.graded')}
+              description={t('quiz.editor.gradedHint')}
             />
             <ModeOption
               active={quiz.mode === 'survey'}
               onClick={() => updateQuiz(quiz.id, { mode: 'survey' })}
-              title="Опитування"
-              description="Без фідбеку по ходу — увесь розбір у кінці"
+              title={t('quiz.editor.survey')}
+              description={t('quiz.editor.surveyHint')}
             />
           </div>
         </div>
@@ -113,8 +115,7 @@ export function QuizEditorView() {
 
       {questionsWithoutCorrect.length > 0 && (
         <p className="rounded-xl border border-amber-500/25 bg-amber-500/8 px-3 py-2 text-[12px] text-amber-700 dark:text-amber-300">
-          У {questionsWithoutCorrect.length} питань не позначено правильної відповіді — вони
-          завжди зараховуватимуться як помилка.
+          {t('quiz.editor.noCorrectWarning', { count: questionsWithoutCorrect.length })}
         </p>
       )}
 
@@ -128,13 +129,13 @@ export function QuizEditorView() {
                 value={question.type}
                 onChange={(e) => changeType(question, e.target.value as QuizQuestion['type'])}
               >
-                <option value="single">Одна відповідь</option>
-                <option value="multiple">Кілька відповідей</option>
+                <option value="single">{t('quiz.editor.typeSingle')}</option>
+                <option value="multiple">{t('quiz.editor.typeMultiple')}</option>
               </select>
               <button
                 className="btn-ghost ml-auto px-2 py-1 text-rose-500 hover:bg-rose-500/10"
                 onClick={() => setQuestions(quiz.questions.filter((q) => q.id !== question.id))}
-                title="Видалити питання"
+                title={t('quiz.editor.deleteQuestion')}
               >
                 <Icon name="trash" size={14} />
               </button>
@@ -143,17 +144,17 @@ export function QuizEditorView() {
             <textarea
               className="field resize-y"
               rows={2}
-              placeholder="Текст питання"
+              placeholder={t('quiz.editor.questionText')}
               value={question.text}
               onChange={(e) => patchQuestion(question.id, { text: e.target.value })}
             />
 
             <label className="block space-y-1">
-              <span className="text-[11px] font-medium text-ink-400">Опис (необов'язково)</span>
+              <span className="text-[11px] font-medium text-ink-400">{t('quiz.editor.qDescription', { optional: t('common.optional') })}</span>
               <textarea
                 className="field resize-y text-[13px]"
                 rows={2}
-                placeholder="Розгорнутий контекст під заголовком питання"
+                placeholder={t('quiz.editor.qDescriptionHint')}
                 value={question.description ?? ''}
                 onChange={(e) =>
                   patchQuestion(question.id, { description: e.target.value || undefined })
@@ -163,12 +164,12 @@ export function QuizEditorView() {
 
             <label className="block space-y-1">
               <span className="text-[11px] font-medium text-ink-400">
-                Уточнення — по одному на рядок (необов'язково)
+                {t('quiz.editor.subRules', { optional: t('common.optional') })}
               </span>
               <textarea
                 className="field resize-y text-[13px]"
                 rows={2}
-                placeholder={'Перше уточнення\nДруге уточнення'}
+                placeholder={t('quiz.editor.subRulesPlaceholder')}
                 value={(question.subRules ?? []).join('\n')}
                 onChange={(e) => {
                   const lines = e.target.value.split('\n').filter((l) => l.trim())
@@ -178,7 +179,7 @@ export function QuizEditorView() {
             </label>
 
             <label className="block space-y-1">
-              <span className="text-[11px] font-medium text-ink-400">Код (необов'язково)</span>
+              <span className="text-[11px] font-medium text-ink-400">{t('quiz.editor.code', { optional: t('common.optional') })}</span>
               <textarea
                 className="field resize-y font-mono text-[12.5px]"
                 rows={4}
@@ -195,7 +196,7 @@ export function QuizEditorView() {
                 <div key={answer.id} className="flex items-center gap-2">
                   <button
                     onClick={() => toggleCorrect(question, answer.id)}
-                    title="Позначити правильною"
+                    title={t('quiz.editor.markCorrect')}
                     className={`grid size-[22px] shrink-0 place-items-center border-2 ${
                       question.type === 'single' ? 'rounded-full' : 'rounded'
                     } ${
@@ -208,7 +209,7 @@ export function QuizEditorView() {
                   </button>
                   <input
                     className="field h-9 flex-1 text-[13px]"
-                    placeholder="Варіант відповіді"
+                    placeholder={t('quiz.editor.answerPlaceholder')}
                     value={answer.text}
                     onChange={(e) =>
                       patchQuestion(question.id, {
@@ -223,8 +224,8 @@ export function QuizEditorView() {
                     disabled={question.answers.length <= 2}
                     title={
                       question.answers.length <= 2
-                        ? 'Потрібно щонайменше два варіанти'
-                        : 'Видалити варіант'
+                        ? t('quiz.editor.minTwo')
+                        : t('quiz.editor.deleteAnswer')
                     }
                     onClick={() =>
                       patchQuestion(question.id, {
@@ -245,7 +246,7 @@ export function QuizEditorView() {
                   })
                 }
               >
-                <Icon name="plus" size={13} /> Додати варіант
+                <Icon name="plus" size={13} /> {t('quiz.editor.addAnswer')}
               </button>
             </div>
           </section>
@@ -256,7 +257,7 @@ export function QuizEditorView() {
         className="btn-soft w-full py-2.5"
         onClick={() => setQuestions([...quiz.questions, emptyQuestion()])}
       >
-        <Icon name="plus" size={16} /> Додати питання
+        <Icon name="plus" size={16} /> {t('quiz.editor.addQuestion')}
       </button>
     </div>
   )

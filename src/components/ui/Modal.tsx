@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
+import { useT } from '@/lib/i18n'
 import { useOverlayRegistration } from '@/store/useOverlay'
 import { Icon } from './Icon'
 
@@ -27,6 +28,7 @@ export function Modal({
   footer,
   size = 'md',
 }: ModalProps) {
+  const t = useT()
   // Поки вікно відкрите, гарячі клавіші навчання мають мовчати.
   useOverlayRegistration(open)
 
@@ -70,7 +72,7 @@ export function Modal({
                   <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">{description}</p>
                 )}
               </div>
-              <button className="btn-ghost -mr-2 px-2" onClick={onClose} aria-label="Закрити">
+              <button className="btn-ghost -mr-2 px-2" onClick={onClose} aria-label={t('common.close')}>
                 <Icon name="x" />
               </button>
             </header>

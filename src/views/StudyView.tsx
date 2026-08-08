@@ -9,6 +9,7 @@ import { useHaptics, useIsTouch } from '@/hooks/useMisc'
 import { useHotkeys } from '@/hooks/useHotkeys'
 import { useStudySession } from '@/hooks/useStudySession'
 import { formatDuration } from '@/lib/date'
+import { useT, type MessageKey, type Translate } from '@/lib/i18n'
 import { speak, ttsSupported } from '@/lib/tts'
 import { useCounts, useDeckProfile } from '@/store/selectors'
 import { useDeck } from '@/store/useDeck'
@@ -18,21 +19,21 @@ import { TypeInPanel } from './TypeInPanel'
 
 interface ModeItem {
   key: StudyMode
-  label: string
+  label: MessageKey
   icon: IconName
-  hint: string
+  hint: MessageKey
   /** Лише для мовних пар: посимвольне звіряння відповіді. */
   languageOnly?: boolean
 }
 
 const MODES: ModeItem[] = [
-  { key: 'srs', label: 'Інтервали', icon: 'cards', hint: 'SM-2: повторення за розкладом' },
-  { key: 'speed', label: 'Спринт', icon: 'zap', hint: 'Мікро-сесія на хвилину' },
+  { key: 'srs', label: 'study.modeSrs', icon: 'cards', hint: 'study.modeSrsHint' },
+  { key: 'speed', label: 'study.modeSpeed', icon: 'zap', hint: 'study.modeSpeedHint' },
   {
     key: 'type',
-    label: 'Друк',
+    label: 'study.modeType',
     icon: 'pencilLine',
-    hint: 'Активне пригадування — введіть фразу',
+    hint: 'study.modeTypeHint',
     languageOnly: true,
   },
 ]
@@ -49,6 +50,7 @@ export function StudyView() {
   const session = useStudySession(mode)
   const { card, revealed, reveal, answer, restart, finished } = session
 
+  const t = useT()
   const { isLanguage, sourceLang, targetLang } = useDeckProfile()
   // Предметна колода не має TTS і зворотного напряму — картка суто «питання → відповідь».
   const reverse = isLanguage && settings.reverse
@@ -133,7 +135,7 @@ export function StudyView() {
             <button
               key={item.key}
               onClick={() => setMode(item.key)}
-              title={item.hint}
+              title={t(item.hint)}
               className={`btn flex-1 gap-1.5 py-1.5 text-[13px] ${
                 mode === item.key
                   ? 'bg-white text-ink-900 shadow-sm dark:bg-white/12 dark:text-white'
@@ -141,7 +143,7 @@ export function StudyView() {
               }`}
             >
               <Icon name={item.icon} size={15} />
-              {item.label}
+              {t(item.label)}
             </button>
           ))}
         </div>
@@ -149,7 +151,7 @@ export function StudyView() {
           <button
             className="btn-ghost px-2"
             onClick={() => setEditorOpen(true)}
-            title="Редагувати картку (E)"
+            title={t('study.editCard')}
           >
             <Icon name="edit" size={17} />
           </button>
@@ -201,7 +203,7 @@ export function StudyView() {
               />
             ) : !revealed ? (
               <button className="btn-primary w-full py-3 text-base" onClick={flip}>
-                Показати відповідь
+                {t('study.showAnswer')}
                 <span className="kbd ml-1 hidden border-white/25 bg-white/15 text-white sm:inline-flex">
                   Space
                 </span>
@@ -212,13 +214,13 @@ export function StudyView() {
                   className="btn border border-rose-500/25 bg-rose-500/10 py-3.5 text-base font-semibold text-rose-600 dark:text-rose-300"
                   onClick={() => rate(0)}
                 >
-                  Не знав
+                  {t('study.didntKnow')}
                 </button>
                 <button
                   className="btn border border-emerald-500/25 bg-emerald-500/10 py-3.5 text-base font-semibold text-emerald-600 dark:text-emerald-300"
                   onClick={() => rate(2)}
                 >
-                  Знав
+                  {t('study.knew')}
                 </button>
               </div>
             ) : (
@@ -234,13 +236,14 @@ export function StudyView() {
             onRestart={restart}
             onSwitchMode={setMode}
             finished={finished}
+            t={t}
           />
         )}
       </AnimatePresence>
 
       {isLanguage && ttsSupported && card && revealed && !settings.autoSpeak && (
         <p className="text-center text-[11px] text-ink-400">
-          <span className="kbd">S</span> — прослухати вимову
+          <span className="kbd">S</span> {t('study.speakHint')}
         </p>
       )}
 
@@ -279,6 +282,7 @@ function SessionDone({
   onRestart,
   onSwitchMode,
   finished,
+  t,
 }: {
   mode: StudyMode
   stats: { answered: number; correct: number; again: number; elapsedMs: number }
@@ -286,6 +290,7 @@ function SessionDone({
   onRestart: () => void
   onSwitchMode: (mode: StudyMode) => void
   finished: boolean
+  t: Translate
 }) {
   const accuracy = stats.answered ? Math.round((stats.correct / stats.answered) * 100) : 0
   const nothingToDo = stats.answered === 0 && finished
@@ -303,37 +308,37 @@ function SessionDone({
 
       <div className="space-y-1.5">
         <h2 className="text-xl font-semibold">
-          {nothingToDo ? 'На сьогодні все повторено 🎉' : 'Сесію завершено!'}
+          {nothingToDo ? t('study.allDone') : t('study.sessionDone')}
         </h2>
         <p className="max-w-sm text-sm text-ink-500 dark:text-ink-400">
           {nothingToDo
             ? queued > 0
-              ? 'Ліміт на сьогодні вичерпано. Можна пройти швидкий спринт для розігріву.'
-              : 'Наступні картки з’являться, щойно настане час повторення.'
-            : `${stats.answered} карток за ${formatDuration(stats.elapsedMs / 1000)}.`}
+              ? t('study.limitReached')
+              : t('study.nothingDue')
+            : t('study.sessionSummary', { count: stats.answered, duration: formatDuration(stats.elapsedMs / 1000) })}
         </p>
       </div>
 
       {stats.answered > 0 && (
         <div className="grid w-full max-w-sm grid-cols-3 gap-2">
-          <Metric value={stats.answered} label="карток" />
-          <Metric value={`${accuracy}%`} label="точність" tone="emerald" />
-          <Metric value={stats.again} label="забув" tone="rose" />
+          <Metric value={stats.answered} label={t('study.metricCards')} />
+          <Metric value={`${accuracy}%`} label={t('study.metricAccuracy')} tone="emerald" />
+          <Metric value={stats.again} label={t('study.metricAgain')} tone="rose" />
         </div>
       )}
 
       <div className="flex flex-wrap justify-center gap-2">
         <button className="btn-primary" onClick={onRestart}>
-          <Icon name="rotate" size={16} /> Ще раз
+          <Icon name="rotate" size={16} /> {t('study.again')}
         </button>
         {mode !== 'speed' && (
           <button className="btn-soft" onClick={() => onSwitchMode('speed')}>
-            <Icon name="zap" size={16} /> Спринт на хвилину
+            <Icon name="zap" size={16} /> {t('study.toSprint')}
           </button>
         )}
         {mode === 'speed' && (
           <button className="btn-soft" onClick={() => onSwitchMode('srs')}>
-            <Icon name="cards" size={16} /> До інтервалів
+            <Icon name="cards" size={16} /> {t('study.toSrs')}
           </button>
         )}
       </div>

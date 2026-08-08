@@ -1,3 +1,5 @@
+// units-i18n: одиниці беруть поточну мову інтерфейсу
+import { translateUnits as u } from '@/lib/i18n/units'
 import type { Card, Grade } from '@/types'
 
 const MIN_EF = 1.3
@@ -77,16 +79,16 @@ export function previewIntervals(card: Card): Record<Grade, string> {
   const out = {} as Record<Grade, string>
   for (const g of [0, 1, 2, 3] as Grade[]) {
     const { card: next } = schedule(card, g)
-    out[g] = g === 0 ? `${RELEARN_MINUTES} хв` : formatInterval(next.interval)
+    out[g] = g === 0 ? `${RELEARN_MINUTES} ${u('units.min')}` : formatInterval(next.interval)
   }
   return out
 }
 
 export function formatInterval(days: number): string {
-  if (days < 1) return '<1 д'
-  if (days < 30) return `${Math.round(days)} д`
-  if (days < 365) return `${(days / 30).toFixed(days < 60 ? 1 : 0)} міс`
-  return `${(days / 365).toFixed(1)} р`
+  if (days < 1) return u('units.lessThanDay')
+  if (days < 30) return `${Math.round(days)} ${u('units.day')}`
+  if (days < 365) return `${(days / 30).toFixed(days < 60 ? 1 : 0)} ${u('units.month')}`
+  return `${(days / 365).toFixed(1)} ${u('units.year')}`
 }
 
 export function isDue(card: Card, now = Date.now()): boolean {

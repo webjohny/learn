@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/Icon'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import type { DeckKind } from '@/lib/api'
+import { useT } from '@/lib/i18n'
 import { LANGUAGES, findLanguage, pairLabel } from '@/lib/langs'
 import { useDeck } from '@/store/useDeck'
 import { useSession } from '@/store/useSession'
@@ -13,9 +14,6 @@ interface DeckDialogProps {
   onClose: () => void
 }
 
-/** Готові теми для предметних колод — просто підказка назви, не обмеження. */
-const SUBJECT_PRESETS = ['Підготовка до співбесіди', 'ПДР', 'Історія України', 'Терміни та поняття']
-
 /** Створення та керування колодами акаунта: мовні пари й предмети. */
 export function DeckDialog({ open, onClose }: DeckDialogProps) {
   const decks = useSession((s) => s.decks)
@@ -24,6 +22,7 @@ export function DeckDialog({ open, onClose }: DeckDialogProps) {
   const setActiveDeck = useDeck((s) => s.setActiveDeck)
   const activeDeckId = useDeck((s) => s.activeDeckId)
   const toast = useToast()
+  const t = useT()
 
   const [kind, setKind] = useState<DeckKind>('language')
   const [name, setName] = useState('')
@@ -34,6 +33,8 @@ export function DeckDialog({ open, onClose }: DeckDialogProps) {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
   const isLanguage = kind === 'language'
+  // Готові теми — просто підказка назви, не обмеження.
+  const subjectPresets = t('deck.presets').split(',')
 
   useEffect(() => {
     if (!open) return
@@ -44,7 +45,9 @@ export function DeckDialog({ open, onClose }: DeckDialogProps) {
   }, [open])
 
   // Підказуємо назву за обраною мовою, поки користувач не ввів свою.
-  const suggestedName = isLanguage ? `${findLanguage(targetLang).label} — розмовна` : 'Нова тема'
+  const suggestedName = isLanguage
+    ? t('deck.suggestedLanguage', { lang: findLanguage(targetLang).label })
+    : t('deck.suggestedSubject')
   const sameLangs = isLanguage && sourceLang === targetLang
 
   const create = async () => {
@@ -59,12 +62,12 @@ export function DeckDialog({ open, onClose }: DeckDialogProps) {
       setActiveDeck(deck.id)
       toast(
         isLanguage
-          ? `Створено пару ${findLanguage(sourceLang).label} → ${findLanguage(targetLang).label}`
-          : `Створено колоду «${deck.name}»`,
+          ? t('deck.createdPair', { source: findLanguage(sourceLang).label, target: findLanguage(targetLang).label })
+          : t('deck.createdSubject', { name: deck.name }),
       )
       onClose()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не вдалося створити колоду.')
+      setError(e instanceof Error ? e.message : t('deck.createFailed'))
     } finally {
       setBusy(false)
     }
@@ -77,9 +80,9 @@ export function DeckDialog({ open, onClose }: DeckDialogProps) {
     }
     try {
       await deleteDeck(id)
-      toast('Колоду видалено', 'info')
+      toast(t('deck.deleted'), 'info')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не вдалося видалити колоду.')
+      setError(e instanceof Error ? e.message : t('deck.deleteFailed'))
     } finally {
       setConfirmDelete(null)
     }
@@ -89,15 +92,15 @@ export function DeckDialog({ open, onClose }: DeckDialogProps) {
     <Modal
       open={open}
       onClose={onClose}
-      title="Колоди"
-      description="Кожна колода має власні картки, прогрес і налаштування."
+      title={t('deck.title')}
+      description={t('deck.description')}
       footer={
         <>
           <button className="btn-soft" onClick={onClose}>
-            Закрити
+            {t('common.close')}
           </button>
           <button className="btn-primary" onClick={create} disabled={busy || sameLangs}>
-            <Icon name="plus" size={16} /> Створити
+            <Icon name="plus" size={16} /> {t('common.create')}
           </button>
         </>
       }
@@ -107,33 +110,33 @@ export function DeckDialog({ open, onClose }: DeckDialogProps) {
           <KindTab
             active={isLanguage}
             onClick={() => setKind('language')}
-            title="Мовна пара"
-            hint="Переклад, озвучення, друк"
+            title={t('deck.kindLanguage')}
+            hint={t('deck.kindLanguageHint')}
           />
           <KindTab
             active={!isLanguage}
             onClick={() => setKind('subject')}
-            title="Предмет"
-            hint="Питання → відповідь: ПДР, співбесіда"
+            title={t('deck.kindSubject')}
+            hint={t('deck.kindSubjectHint')}
           />
         </div>
 
         {isLanguage ? (
           <>
             <div className="grid gap-3 sm:grid-cols-2">
-              <LangSelect label="Мова питання" value={sourceLang} onChange={setSourceLang} />
-              <LangSelect label="Мова відповіді (TTS)" value={targetLang} onChange={setTargetLang} />
+              <LangSelect label={t('deck.sourceLang')} value={sourceLang} onChange={setSourceLang} />
+              <LangSelect label={t('deck.targetLang')} value={targetLang} onChange={setTargetLang} />
             </div>
 
             {sameLangs && (
               <p className="text-[12px] text-amber-600 dark:text-amber-400">
-                Мови питання й відповіді мають відрізнятися.
+                {t('deck.sameLangs')}
               </p>
             )}
           </>
         ) : (
           <div className="flex flex-wrap gap-1.5">
-            {SUBJECT_PRESETS.map((preset) => (
+            {subjectPresets.map((preset) => (
               <button key={preset} className="chip hover:bg-brand-500/12" onClick={() => setName(preset)}>
                 {preset}
               </button>
@@ -142,7 +145,7 @@ export function DeckDialog({ open, onClose }: DeckDialogProps) {
         )}
 
         <label className="block space-y-1.5">
-          <span className="text-xs font-medium text-ink-500 dark:text-ink-400">Назва колоди</span>
+          <span className="text-xs font-medium text-ink-500 dark:text-ink-400">{t('deck.name')}</span>
           <input
             className="field"
             value={name}
@@ -158,7 +161,7 @@ export function DeckDialog({ open, onClose }: DeckDialogProps) {
         )}
 
         <div className="space-y-1.5 border-t border-ink-200/70 pt-3 dark:border-white/8">
-          <p className="text-xs font-medium text-ink-500 dark:text-ink-400">Наявні колоди</p>
+          <p className="text-xs font-medium text-ink-500 dark:text-ink-400">{t('deck.existing')}</p>
           {decks.map((deck) => (
             <div
               key={deck.id}
@@ -166,7 +169,7 @@ export function DeckDialog({ open, onClose }: DeckDialogProps) {
             >
               <span className="text-sm">{pairLabel(deck.sourceLang, deck.targetLang)}</span>
               <span className="min-w-0 flex-1 truncate text-[13px]">{deck.name}</span>
-              {deck.id === activeDeckId && <span className="chip">активна</span>}
+              {deck.id === activeDeckId && <span className="chip">{t('deck.active')}</span>}
               <button
                 className={`btn px-2 py-1 text-xs ${
                   confirmDelete === deck.id
@@ -175,10 +178,10 @@ export function DeckDialog({ open, onClose }: DeckDialogProps) {
                 }`}
                 onClick={() => remove(deck.id)}
                 disabled={decks.length <= 1}
-                title={decks.length <= 1 ? 'Останню колоду видалити не можна' : 'Видалити'}
+                title={decks.length <= 1 ? t('deck.lastOne') : t('common.delete')}
               >
                 <Icon name="trash" size={14} />
-                {confirmDelete === deck.id && 'Точно?'}
+                {confirmDelete === deck.id && t('common.sure')}
               </button>
             </div>
           ))}

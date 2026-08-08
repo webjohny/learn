@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Icon, type IconName } from '@/components/ui/Icon'
 import { useToast } from '@/components/ui/Toast'
 import { useTheme } from '@/hooks/useMisc'
+import { LOCALE_LABELS, LOCALES, useT, type MessageKey } from '@/lib/i18n'
 import { findLanguage } from '@/lib/langs'
 import { getVoicesFor, onVoicesChanged, speak, ttsSupported } from '@/lib/tts'
 import { useCards, useDeckProfile } from '@/store/selectors'
@@ -26,15 +27,15 @@ const SAMPLES: Record<string, string> = {
 }
 
 /** `languageOnly` — клавіші, що працюють лише в мовних парах. */
-const HOTKEYS: [string, string, boolean?][] = [
-  ['Space', 'перевернути картку'],
-  ['1 / ←', 'Забув'],
-  ['2 / ↓', 'Важко'],
-  ['3 / →', 'Добре'],
-  ['4 / ↑', 'Легко'],
-  ['S', 'прослухати вимову', true],
-  ['E', 'редагувати поточну картку'],
-  ['Esc', 'закрити вікно'],
+const HOTKEYS: [string, MessageKey, boolean?][] = [
+  ['Space', 'settings.hkFlip'],
+  ['1 / ←', 'rating.again'],
+  ['2 / ↓', 'rating.hard'],
+  ['3 / →', 'rating.good'],
+  ['4 / ↑', 'rating.easy'],
+  ['S', 'settings.hkSpeak', true],
+  ['E', 'settings.hkEdit'],
+  ['Esc', 'settings.hkClose'],
 ]
 
 interface SettingsViewProps {
@@ -50,6 +51,7 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
   const { isLanguage, targetLang } = useDeckProfile()
   const { theme, toggle } = useTheme()
   const toast = useToast()
+  const t = useT()
 
   const [voices, setVoices] = useState(() => getVoicesFor(targetLang))
   const [confirm, setConfirm] = useState<'progress' | 'seed' | null>(null)
@@ -62,9 +64,9 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
 
   return (
     <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-2">
-      <Section icon="cards" title="Навчання">
+      <Section icon="cards" title={t('settings.learning')}>
         <Slider
-          label="Нових карток на день"
+          label={t('settings.newPerDay')}
           value={settings.newPerDay}
           min={0}
           max={60}
@@ -72,7 +74,7 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
           onChange={(newPerDay) => setSettings({ newPerDay })}
         />
         <Slider
-          label="Максимум повторень на день"
+          label={t('settings.reviewsPerDay')}
           value={settings.reviewsPerDay}
           min={20}
           max={400}
@@ -81,23 +83,23 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
         />
         {isLanguage && (
           <Toggle
-            label="Зворотний напрям"
-            hint="Спочатку мова відповіді, потім переклад"
+            label={t('settings.reverse')}
+            hint={t('settings.reverseHint')}
             checked={settings.reverse}
             onChange={(reverse) => setSettings({ reverse })}
           />
         )}
         <Toggle
-          label="Ховати ключові слова"
-          hint="Фрагменти в *[дужках]* показуються під блюром до кліку"
+          label={t('settings.clozeBlur')}
+          hint={t('settings.clozeBlurHint')}
           checked={settings.clozeBlur}
           onChange={(clozeBlur) => setSettings({ clozeBlur })}
         />
       </Section>
 
-      <Section icon="zap" title="Спринт">
+      <Section icon="zap" title={t('settings.sprint')}>
         <Slider
-          label="Тривалість сесії"
+          label={t('settings.sprintSeconds')}
           value={settings.speedSessionSeconds}
           min={30}
           max={300}
@@ -106,7 +108,7 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
           onChange={(speedSessionSeconds) => setSettings({ speedSessionSeconds })}
         />
         <Slider
-          label="Карток у сесії"
+          label={t('settings.sprintSize')}
           value={settings.speedSessionSize}
           min={5}
           max={30}
@@ -116,17 +118,17 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
       </Section>
 
       {isLanguage && (
-        <Section icon="volume" title="Озвучення">
+        <Section icon="volume" title={t('settings.speech')}>
           {ttsSupported ? (
             <>
               <Toggle
-                label="Автоозвучення відповіді"
-                hint="Фраза цільовою мовою читається одразу після перевороту"
+                label={t('settings.autoSpeak')}
+                hint={t('settings.autoSpeakHint')}
                 checked={settings.autoSpeak}
                 onChange={(autoSpeak) => setSettings({ autoSpeak })}
               />
               <Slider
-                label="Швидкість мовлення"
+                label={t('settings.rate')}
                 value={settings.speechRate}
                 min={0.6}
                 max={1.4}
@@ -134,14 +136,14 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
                 format={(v) => `${v.toFixed(2)}×`}
                 onChange={(speechRate) => setSettings({ speechRate })}
               />
-              <Field label={`Голос — ${findLanguage(targetLang).label}`}>
+              <Field label={t('settings.voice', { lang: findLanguage(targetLang).label })}>
                 <div className="flex gap-2">
                   <select
                     className="field flex-1"
                     value={settings.voiceURI ?? ''}
                     onChange={(e) => setSettings({ voiceURI: e.target.value || null })}
                   >
-                    <option value="">Системний за замовчуванням</option>
+                    <option value="">{t('settings.voiceDefault')}</option>
                     {voices.map((voice: SpeechSynthesisVoice) => (
                       <option key={voice.voiceURI} value={voice.voiceURI}>
                         {voice.name} ({voice.lang})
@@ -158,54 +160,67 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
                       })
                     }
                   >
-                    <Icon name="play" size={14} /> Тест
+                    <Icon name="play" size={14} /> {t('settings.voiceTest')}
                   </button>
                 </div>
                 {!voices.length && (
                   <p className="text-[11px] text-amber-600 dark:text-amber-400">
-                    У системі немає голосу для цієї мови — озвучення буде недоступне.
+                    {t('settings.noVoice')}
                   </p>
                 )}
               </Field>
             </>
           ) : (
             <p className="text-[13px] text-ink-400">
-              Браузер не підтримує Web Speech API — озвучення недоступне.
+              {t('settings.noTts')}
             </p>
           )}
         </Section>
       )}
 
-      <Section icon="settings" title="Інтерфейс">
+      <Section icon="settings" title={t('settings.interface')}>
+        <Field label={t('settings.language')}>
+          <select
+            className="field"
+            value={settings.locale}
+            onChange={(e) => setSettings({ locale: e.target.value as (typeof LOCALES)[number] })}
+          >
+            {LOCALES.map((code) => (
+              <option key={code} value={code}>
+                {LOCALE_LABELS[code]}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Toggle
-          label="Темна тема"
+          label={t('settings.dark')}
           checked={theme === 'dark'}
           onChange={toggle}
-          hint="Перемикається також кнопкою в шапці"
+          hint={t('settings.darkHint')}
         />
         <Toggle
-          label="Вібровідгук"
-          hint="Коротка вібрація при свайпі та оцінці (мобільні)"
+          label={t('settings.haptics')}
+          hint={t('settings.hapticsHint')}
           checked={settings.hapticFeedback}
           onChange={(hapticFeedback) => setSettings({ hapticFeedback })}
         />
       </Section>
 
-      <Section icon="keyboard" title="Гарячі клавіші">
+      <Section icon="keyboard" title={t('settings.hotkeys')}>
         <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
           {HOTKEYS.filter(([, , languageOnly]) => isLanguage || !languageOnly).map(([key, action]) => (
             <div key={key} className="flex items-center justify-between gap-3 text-[13px]">
-              <dt className="text-ink-500 dark:text-ink-400">{action}</dt>
+              <dt className="text-ink-500 dark:text-ink-400">{t(action)}</dt>
               <dd className="kbd shrink-0">{key}</dd>
             </div>
           ))}
         </dl>
       </Section>
 
-      <Section icon="layers" title="Дані" hint={`${cardCount} карток`}>
+      <Section icon="layers" title={t('settings.data')} hint={t('common.cardsCount', { count: cardCount })}>
         <div className="flex flex-wrap gap-2">
           <button className="btn-soft" onClick={onOpenImport}>
-            <Icon name="upload" size={16} /> Імпорт / експорт
+            <Icon name="upload" size={16} /> {t('settings.importExport')}
           </button>
 
           <button
@@ -218,11 +233,11 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
               if (confirm !== 'progress') return setConfirm('progress')
               resetAllProgress()
               setConfirm(null)
-              toast('Прогрес скинуто, картки залишились', 'info')
+              toast(t('settings.progressReset'), 'info')
             }}
           >
             <Icon name="rotate" size={16} />
-            {confirm === 'progress' ? 'Точно скинути прогрес?' : 'Скинути прогрес'}
+            {confirm === 'progress' ? t('settings.resetProgressConfirm') : t('settings.resetProgress')}
           </button>
 
           {/* Стартовий набір — англійські фрази; у предметній колоді він би затер картки. */}
@@ -237,16 +252,16 @@ export function SettingsView({ onOpenImport }: SettingsViewProps) {
                 if (confirm !== 'seed') return setConfirm('seed')
                 loadSeed()
                 setConfirm(null)
-                toast('Стартову колоду відновлено', 'info')
+                toast(t('settings.seedRestored'), 'info')
               }}
             >
               <Icon name="undo" size={16} />
-              {confirm === 'seed' ? 'Замінити всі картки?' : 'Повернути стартову колоду'}
+              {confirm === 'seed' ? t('settings.restoreSeedConfirm') : t('settings.restoreSeed')}
             </button>
           )}
         </div>
         <p className="text-[11px] text-ink-400">
-          Дані зберігаються локально в браузері (localStorage). Регулярно робіть бекап.
+          {t('settings.storageNote')}
         </p>
       </Section>
     </div>

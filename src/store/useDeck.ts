@@ -6,6 +6,7 @@ import type { SyncCard, SyncDayStat } from '@/lib/api'
 import { canonicalCategory } from '@/lib/categories'
 import { dayKey } from '@/lib/date'
 import { BACKUP_VERSION, dedupe, newId, normalizeCard } from '@/lib/deck'
+import { detectLocale } from '@/lib/i18n/core'
 import { schedule } from '@/lib/sm2'
 import type { Card, CardImport, DayStat, Grade, ReviewLogEntry, Settings, StudyMode } from '@/types'
 
@@ -24,6 +25,7 @@ function preferredTheme(): Settings['theme'] {
 
 export const defaultSettings: Settings = {
   theme: preferredTheme(),
+  locale: detectLocale(),
   autoSpeak: true,
   speechRate: 0.95,
   voiceURI: null,

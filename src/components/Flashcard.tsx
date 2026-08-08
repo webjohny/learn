@@ -4,23 +4,18 @@ import { useEffect } from 'react'
 import { ClozeText } from '@/components/ClozeText'
 import { Icon } from '@/components/ui/Icon'
 import { ttsSupported } from '@/lib/tts'
+import { useT } from '@/lib/i18n'
 import type { Card, Grade } from '@/types'
 
 const SWIPE_DISTANCE = 110
 const SWIPE_VELOCITY = 520
 
-export interface SwipeHint {
-  grade: Grade
-  label: string
-  tone: string
-}
-
 /** Напрямок свайпу → оцінка. Ліво/право — основні, верх/низ — точніші. */
 const HINTS = {
-  left: { grade: 0 as Grade, label: 'Забув', tone: 'text-rose-400 border-rose-400/50 bg-rose-500/12' },
-  right: { grade: 2 as Grade, label: 'Добре', tone: 'text-emerald-400 border-emerald-400/50 bg-emerald-500/12' },
-  up: { grade: 3 as Grade, label: 'Легко', tone: 'text-sky-400 border-sky-400/50 bg-sky-500/12' },
-  down: { grade: 1 as Grade, label: 'Важко', tone: 'text-amber-400 border-amber-400/50 bg-amber-500/12' },
+  left: { grade: 0 as Grade, labelKey: 'rating.again' as const, tone: 'text-rose-400 border-rose-400/50 bg-rose-500/12' },
+  right: { grade: 2 as Grade, labelKey: 'rating.good' as const, tone: 'text-emerald-400 border-emerald-400/50 bg-emerald-500/12' },
+  up: { grade: 3 as Grade, labelKey: 'rating.easy' as const, tone: 'text-sky-400 border-sky-400/50 bg-sky-500/12' },
+  down: { grade: 1 as Grade, labelKey: 'rating.hard' as const, tone: 'text-amber-400 border-amber-400/50 bg-amber-500/12' },
 }
 
 interface FlashcardProps {
@@ -51,6 +46,7 @@ export function Flashcard({
   hideAnswerText = false,
 }: FlashcardProps) {
   const x = useMotionValue(0)
+  const t = useT()
   const y = useMotionValue(0)
 
   const rotate = useTransform(x, [-240, 240], [-9, 9])
@@ -111,9 +107,9 @@ export function Flashcard({
           </p>
           <Footer>
             <span className="hidden items-center gap-1.5 sm:inline-flex">
-              <span className="kbd">Space</span> перевернути
+              <span className="kbd">Space</span> {t('card.flipHint')}
             </span>
-            <span className="inline-flex items-center gap-1.5 sm:hidden">Торкніться, щоб побачити</span>
+            <span className="inline-flex items-center gap-1.5 sm:hidden">{t('card.tapHint')}</span>
           </Footer>
         </Face>
 
@@ -127,7 +123,7 @@ export function Flashcard({
           <div className="space-y-3">
             {hideAnswerText ? (
               <p className="text-[clamp(1.1rem,3.6vw,1.5rem)] text-ink-400 italic">
-                Введіть відповідь у полі нижче
+                {t('card.typeBelow')}
               </p>
             ) : (
               <p className="text-balance text-[clamp(1.25rem,4.4vw,2rem)] leading-snug font-semibold">
@@ -153,11 +149,11 @@ export function Flashcard({
                   onSpeak()
                 }}
               >
-                <Icon name="volume" size={14} /> Прослухати
+                <Icon name="volume" size={14} /> {t('common.listen')}
               </button>
             )}
-            <span className="hidden sm:inline">Оцініть відповідь нижче</span>
-            <span className="sm:hidden">Свайп: ← забув · → добре · ↑ легко · ↓ важко</span>
+            <span className="hidden sm:inline">{t('card.rateBelow')}</span>
+            <span className="sm:hidden">{t('card.swipeHint')}</span>
           </Footer>
         </Face>
       </motion.div>
@@ -226,12 +222,13 @@ function SwipeBadge({
   opacity: MotionValue<number>
   className: string
 }) {
+  const t = useT()
   return (
     <motion.div
       style={{ opacity }}
       className={`pointer-events-none absolute z-10 rounded-xl border px-3 py-1.5 text-xs font-bold tracking-wide uppercase backdrop-blur-sm ${hint.tone} ${className}`}
     >
-      {hint.label}
+      {t(hint.labelKey)}
     </motion.div>
   )
 }

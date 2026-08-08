@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { CardEditor } from '@/components/CardEditor'
 import { Icon } from '@/components/ui/Icon'
 import { formatRelative } from '@/lib/date'
+import { useT } from '@/lib/i18n'
 import { formatInterval, isNew } from '@/lib/sm2'
 import { normalize, stripCloze } from '@/lib/text'
 import { speak, ttsSupported } from '@/lib/tts'
@@ -35,6 +36,7 @@ export function BrowseView() {
   const [editing, setEditing] = useState<Card | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)
   const { isLanguage, targetLang } = useDeckProfile()
+  const t = useT()
 
   const filtered = useMemo(() => {
     const q = normalize(query)
@@ -75,25 +77,25 @@ export function BrowseView() {
               setQuery(e.target.value)
               setLimit(PAGE)
             }}
-            placeholder="Пошук за фразою, категорією, тегом…"
+            placeholder={t('browse.search')}
             className="field pl-9"
           />
         </div>
         <button className="btn-primary shrink-0" onClick={() => openEditor(null)}>
           <Icon name="plus" size={16} />
-          <span className="hidden sm:inline">Додати</span>
+          <span className="hidden sm:inline">{t('common.add')}</span>
         </button>
       </div>
 
       <div className="space-y-2">
         <FilterRow
-          title="Категорії"
+          title={t('browse.categories')}
           values={categories}
           active={activeCategories}
           onToggle={(v) => toggle(activeCategories, v, setActiveCategories)}
         />
         <FilterRow
-          title="Теги"
+          title={t('browse.tags')}
           values={tags}
           active={activeTags}
           prefix="#"
@@ -103,8 +105,8 @@ export function BrowseView() {
 
       <div className="flex items-center justify-between text-xs text-ink-400">
         <span>
-          {filtered.length} з {cards.length} карток
-          {filtersActive && ' · фільтр застосовано і до навчання'}
+          {t('browse.shown', { shown: filtered.length, total: cards.length })}
+          {filtersActive && t('browse.filterNote')}
         </span>
         {filtersActive && (
           <button
@@ -114,7 +116,7 @@ export function BrowseView() {
               setActiveTags([])
             }}
           >
-            Скинути фільтри
+            {t('browse.resetFilters')}
           </button>
         )}
       </div>
@@ -141,10 +143,10 @@ export function BrowseView() {
               <p className="text-sm font-medium">{stripCloze(card.back)}</p>
               <p className="text-[13px] text-ink-500 dark:text-ink-400">{card.front}</p>
               <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-400">
-                <span>{isNew(card) ? '🆕 нова' : `⏱ ${formatRelative(card.nextReview)}`}</span>
-                {!isNew(card) && <span>інтервал {formatInterval(card.interval)}</span>}
+                <span>{isNew(card) ? t('browse.new') : `⏱ ${formatRelative(card.nextReview)}`}</span>
+                {!isNew(card) && <span>{t('browse.interval', { value: formatInterval(card.interval) })}</span>}
                 <span>EF {card.efactor.toFixed(2)}</span>
-                {(card.lapses ?? 0) > 0 && <span>забув {card.lapses}×</span>}
+                {(card.lapses ?? 0) > 0 && <span>{t('browse.lapses', { count: card.lapses ?? 0 })}</span>}
               </p>
             </div>
 
@@ -152,7 +154,7 @@ export function BrowseView() {
               {isLanguage && ttsSupported && (
                 <button
                   className="btn-ghost px-2 py-1"
-                  title="Прослухати"
+                  title={t('common.listen')}
                   onClick={() =>
                     speak(card.back, {
                       rate: settings.speechRate,
@@ -166,14 +168,14 @@ export function BrowseView() {
               )}
               <button
                 className="btn-ghost px-2 py-1"
-                title="Редагувати"
+                title={t('common.edit')}
                 onClick={() => openEditor(card)}
               >
                 <Icon name="edit" size={15} />
               </button>
               <button
                 className="btn-ghost px-2 py-1"
-                title={card.suspended ? 'Повернути в навчання' : 'Призупинити'}
+                title={card.suspended ? t('browse.unsuspend') : t('browse.suspend')}
                 onClick={() => toggleSuspend(card.id)}
               >
                 <Icon name={card.suspended ? 'eyeOff' : 'eye'} size={15} />
@@ -184,7 +186,7 @@ export function BrowseView() {
 
         {filtered.length > limit && (
           <button className="btn-soft w-full" onClick={() => setLimit((l) => l + PAGE)}>
-            Показати ще {Math.min(PAGE, filtered.length - limit)}
+            {t('browse.showMore', { count: Math.min(PAGE, filtered.length - limit) })}
           </button>
         )}
 
@@ -192,10 +194,10 @@ export function BrowseView() {
           <div className="surface flex flex-col items-center gap-3 p-10 text-center">
             <Icon name="search" size={26} className="text-ink-400" />
             <p className="text-sm text-ink-500 dark:text-ink-400">
-              Нічого не знайдено. Спробуйте інший запит або додайте картку.
+              {t('browse.empty')}
             </p>
             <button className="btn-primary" onClick={() => openEditor(null)}>
-              <Icon name="plus" size={16} /> Нова картка
+              <Icon name="plus" size={16} /> {t('browse.newCard')}
             </button>
           </div>
         )}

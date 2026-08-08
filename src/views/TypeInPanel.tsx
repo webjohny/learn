@@ -3,8 +3,12 @@ import { useRef, useState } from 'react'
 
 import { RatingBar } from '@/components/RatingBar'
 import { Icon } from '@/components/ui/Icon'
+import { useT, type MessageKey } from '@/lib/i18n'
 import { diffWords, similarity, stripCloze } from '@/lib/text'
 import type { Card, Grade } from '@/types'
+
+/** Індекс = `Grade`, тож порядок збігається з 0..3. */
+const GRADE_KEYS: MessageKey[] = ['rating.again', 'rating.hard', 'rating.good', 'rating.easy']
 
 interface TypeInPanelProps {
   card: Card
@@ -16,6 +20,7 @@ interface TypeInPanelProps {
 
 /** Активне пригадування: користувач набирає фразу, ми показуємо посимвольну точність. */
 export function TypeInPanel({ card, revealed, onReveal, onRate, reverse }: TypeInPanelProps) {
+  const t = useT()
   const expected = reverse ? card.front : card.back
   const [value, setValue] = useState('')
   const [score, setScore] = useState<number | null>(null)
@@ -46,15 +51,15 @@ export function TypeInPanel({ card, revealed, onReveal, onRate, reverse }: TypeI
             }}
             rows={2}
             autoFocus
-            placeholder="Наберіть фразу англійською…"
+            placeholder={t('typeIn.placeholder')}
             className="field resize-none text-base"
           />
           <div className="flex gap-2">
             <button className="btn-soft flex-1" onClick={onReveal}>
-              Не знаю
+              {t('typeIn.dontKnow')}
             </button>
             <button className="btn-primary flex-[2]" onClick={check} disabled={!value.trim()}>
-              <Icon name="check" size={16} /> Перевірити
+              <Icon name="check" size={16} /> {t('typeIn.check')}
               <span className="kbd ml-1 hidden border-white/25 bg-white/15 text-white sm:inline-flex">
                 Enter
               </span>
@@ -70,7 +75,7 @@ export function TypeInPanel({ card, revealed, onReveal, onRate, reverse }: TypeI
               className="surface space-y-2 p-3"
             >
               <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-ink-500 dark:text-ink-400">Ваша відповідь</span>
+                <span className="font-medium text-ink-500 dark:text-ink-400">{t('typeIn.yourAnswer')}</span>
                 <span
                   className={`font-semibold tabular-nums ${
                     percent >= 97
@@ -80,7 +85,7 @@ export function TypeInPanel({ card, revealed, onReveal, onRate, reverse }: TypeI
                         : 'text-rose-500'
                   }`}
                 >
-                  {percent}% збігу
+                  {t('typeIn.match', { percent })}
                 </span>
               </div>
               <p className="flex flex-wrap gap-x-1.5 gap-y-1 text-sm leading-relaxed">
@@ -98,7 +103,7 @@ export function TypeInPanel({ card, revealed, onReveal, onRate, reverse }: TypeI
                 ))}
               </p>
               <p className="border-t border-ink-200/70 pt-2 text-sm text-ink-500 dark:border-white/8 dark:text-ink-400">
-                Еталон: <span className="text-ink-900 dark:text-ink-100">{stripCloze(expected)}</span>
+                {t('typeIn.expected')} <span className="text-ink-900 dark:text-ink-100">{stripCloze(expected)}</span>
               </p>
             </motion.div>
           )}
@@ -106,9 +111,9 @@ export function TypeInPanel({ card, revealed, onReveal, onRate, reverse }: TypeI
           <div className="space-y-1.5">
             {score !== null && (
               <p className="text-center text-[11px] text-ink-400">
-                Пропонована оцінка:{' '}
+                {t('typeIn.suggested')}{' '}
                 <span className="font-semibold">
-                  {['Забув', 'Важко', 'Добре', 'Легко'][suggested]}
+                  {t(GRADE_KEYS[suggested])}
                 </span>
               </p>
             )}

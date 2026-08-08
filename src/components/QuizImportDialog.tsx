@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import { Icon } from '@/components/ui/Icon'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import { useT } from '@/lib/i18n'
 import { QUIZ_SAMPLE, QuizImportError, parseQuizImport } from '@/lib/quizImport'
 import type { Quiz } from '@/lib/quizTypes'
 import { useQuizzes } from '@/store/useQuizzes'
@@ -16,6 +17,7 @@ interface QuizImportDialogProps {
 export function QuizImportDialog({ open, onClose }: QuizImportDialogProps) {
   const addQuizzes = useQuizzes((s) => s.addQuizzes)
   const toast = useToast()
+  const t = useT()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [text, setText] = useState('')
@@ -32,13 +34,13 @@ export function QuizImportDialog({ open, onClose }: QuizImportDialogProps) {
     try {
       setParsed(parseQuizImport(value))
     } catch (e) {
-      setError(e instanceof QuizImportError ? e.message : 'Не вдалося прочитати файл.')
+      setError(e instanceof QuizImportError ? e.message : t('import.unreadable'))
     }
   }
 
   const readFile = async (file: File) => {
     if (!/\.(json|txt)$/i.test(file.name)) {
-      setError('Підтримуються лише .json файли.')
+      setError(t('import.onlyJson'))
       return
     }
     analyse(await file.text())
@@ -47,7 +49,7 @@ export function QuizImportDialog({ open, onClose }: QuizImportDialogProps) {
   const confirmImport = () => {
     if (!parsed) return
     const added = addQuizzes(parsed)
-    toast(added === 1 ? 'Вікторину імпортовано' : `Імпортовано ${added} вікторин`)
+    toast(added === 1 ? t('quiz.import.done') : t('quiz.import.doneMany', { count: added }))
     setText('')
     setParsed(null)
     setError(null)
@@ -60,17 +62,17 @@ export function QuizImportDialog({ open, onClose }: QuizImportDialogProps) {
     <Modal
       open={open}
       onClose={onClose}
-      title="Імпорт вікторини"
-      description="JSON з полями title, mode і масивом questions."
+      title={t('quiz.import.title')}
+      description={t('quiz.import.description')}
       size="lg"
       footer={
         <>
           <button className="btn-soft" onClick={onClose}>
-            Закрити
+            {t('common.close')}
           </button>
           <button className="btn-primary" onClick={confirmImport} disabled={!parsed}>
             <Icon name="upload" size={16} />
-            {parsed ? `Імпортувати ${parsed.length}` : 'Імпортувати'}
+            {parsed ? t('import.doImportCount', { count: parsed.length }) : t('import.doImport')}
           </button>
         </>
       }
@@ -96,8 +98,8 @@ export function QuizImportDialog({ open, onClose }: QuizImportDialogProps) {
           }`}
         >
           <Icon name="upload" size={24} className="text-ink-400" />
-          <p className="text-sm font-medium">Перетягніть JSON-файл або натисніть, щоб обрати</p>
-          <p className="text-xs text-ink-400">Підтримується одна вікторина або масив вікторин</p>
+          <p className="text-sm font-medium">{t('import.dropzone')}</p>
+          <p className="text-xs text-ink-400">{t('quiz.import.dropzoneHint')}</p>
           <input
             ref={fileRef}
             type="file"
@@ -114,10 +116,10 @@ export function QuizImportDialog({ open, onClose }: QuizImportDialogProps) {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-ink-500 dark:text-ink-400">
-              …або вставте JSON сюди
+              {t('import.paste')}
             </span>
             <button className="btn-ghost px-2 py-1 text-[11px]" onClick={() => analyse(QUIZ_SAMPLE)}>
-              Показати приклад
+              {t('import.sample')}
             </button>
           </div>
           <textarea
@@ -141,15 +143,15 @@ export function QuizImportDialog({ open, onClose }: QuizImportDialogProps) {
           <div className="space-y-2 rounded-xl border border-emerald-500/25 bg-emerald-500/8 p-3.5">
             <p className="flex items-center gap-2 text-[13px] font-medium text-emerald-700 dark:text-emerald-300">
               <Icon name="check" size={15} />
-              Розпізнано {parsed.length} вікторин, {totalQuestions} питань
+              {t('quiz.import.recognized', { quizzes: parsed.length, questions: totalQuestions })}
             </p>
             <ul className="space-y-1 text-[12px] text-ink-500 dark:text-ink-400">
               {parsed.slice(0, 3).map((quiz, i) => (
                 <li key={i} className="truncate">
-                  · {quiz.title} — {quiz.questions.length} питань
+                  · {t('quiz.import.item', { title: quiz.title, count: quiz.questions.length })}
                 </li>
               ))}
-              {parsed.length > 3 && <li>· …ще {parsed.length - 3}</li>}
+              {parsed.length > 3 && <li>· {t('import.more', { count: parsed.length - 3 })}</li>}
             </ul>
           </div>
         )}

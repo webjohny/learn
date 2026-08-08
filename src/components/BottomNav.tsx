@@ -2,9 +2,11 @@ import { NavLink } from 'react-router-dom'
 
 import { NAV } from '@/components/AppHeader'
 import { Icon } from '@/components/ui/Icon'
+import { useT } from '@/lib/i18n'
 
 /** Нижня навігація — тільки мобільні; на десктопі використовуються таби в шапці. */
 export function BottomNav() {
+  const t = useT()
   return (
     <nav className="safe-b sticky bottom-0 z-30 border-t border-ink-200/70 bg-ink-50/90 px-2 pt-1.5 backdrop-blur-xl sm:hidden dark:border-white/8 dark:bg-ink-950/90">
       <div className="flex items-stretch justify-around">
@@ -20,7 +22,7 @@ export function BottomNav() {
             }
           >
             <Icon name={item.icon} size={20} />
-            <span className="text-[10px] leading-none font-medium">{item.label}</span>
+            <span className="text-[10px] leading-none font-medium">{t(item.label)}</span>
           </NavLink>
         ))}
       </div>
