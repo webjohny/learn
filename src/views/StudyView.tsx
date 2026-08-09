@@ -228,16 +228,27 @@ export function StudyView() {
             )}
           </motion.div>
         ) : (
-          <SessionDone
+          // Підсумок навмисно не анімує opacity: якщо анімація застрягне
+          // (StrictMode у dev, переривання, повільний пристрій), користувач
+          // побачив би порожній екран замість «Сесію завершено». Рухаємо лише
+          // по вертикалі — вміст лишається читабельним за будь-якого збою.
+          // motion.div тут прямий дитина AnimatePresence — як і гілка картки.
+          <motion.div
             key="done"
-            mode={mode}
-            stats={session.stats}
-            queued={counts.queued}
-            onRestart={restart}
-            onSwitchMode={setMode}
-            finished={finished}
-            t={t}
-          />
+            className="flex min-h-0 flex-1 flex-col"
+            initial={{ y: 12 }}
+            animate={{ y: 0 }}
+          >
+            <SessionDone
+              mode={mode}
+              stats={session.stats}
+              queued={counts.queued}
+              onRestart={restart}
+              onSwitchMode={setMode}
+              finished={finished}
+              t={t}
+            />
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -295,13 +306,9 @@ function SessionDone({
   const accuracy = stats.answered ? Math.round((stats.correct / stats.answered) * 100) : 0
   const nothingToDo = stats.answered === 0 && finished
 
+  // Анімацію тримає motion.div-обгортка у StudyView — тут звичайний div.
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      className="surface flex flex-1 flex-col items-center justify-center gap-5 p-8 text-center"
-    >
+    <div className="surface flex flex-1 flex-col items-center justify-center gap-5 p-8 text-center">
       <span className="grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-sky-500 text-white shadow-lg shadow-brand-500/25">
         <Icon name={nothingToDo ? 'check' : 'award'} size={26} />
       </span>
@@ -342,7 +349,7 @@ function SessionDone({
           </button>
         )}
       </div>
-    </motion.div>
+    </div>
   )
 }
 
