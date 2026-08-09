@@ -26,6 +26,8 @@ export interface StudySession {
   skip: () => void
   restart: () => void
   finished: boolean
+  /** Номер показу картки. Зростає навіть коли та сама картка йде поспіль. */
+  step: number
   /** Скільки карток лишилось у черзі, включно з поточною */
   remaining: number
   total: number
@@ -33,6 +35,23 @@ export interface StudySession {
   stats: SessionStats
   /** Для Speed Review — мілісекунди до кінця сесії */
   timeLeftMs: number | null
+}
+
+/**
+ * Черга після відповіді. `requeueId` — картка, яку забули й треба показати ще раз.
+ *
+ * Увага: коли забута картка була в черзі останньою, `rest` порожній і вона
+ * повертається на позицію 0 — тобто на екрані лишається та сама картка.
+ * Тому користувач сесії мусить мати окремий лічильник показів, а не
+ * покладатися на зміну id (див. `step` нижче).
+ *
+ * Експортовано заради регресійних тестів.
+ */
+export function requeue(queue: string[], requeueId?: string): string[] {
+  const [, ...rest] = queue
+  if (requeueId === undefined) return rest
+  const at = Math.min(REQUEUE_GAP, rest.length)
+  return [...rest.slice(0, at), requeueId, ...rest.slice(at)]
 }
 
 /** Експортовано заради регресійних тестів — у застосунку викликається лише звідси. */
@@ -97,6 +116,10 @@ export function useStudySession(mode: StudyMode): StudySession {
   )
   const [total, setTotal] = useState(queue.length)
   const [revealed, setRevealed] = useState(false)
+  // Лічильник показів. Забута ОСТАННЯ картка повертається на позицію 0 —
+  // `currentId` при цьому не змінюється, тож самої лише зміни id замало,
+  // щоб зрозуміти, що картку показують наново.
+  const [step, setStep] = useState(0)
   const [stats, setStats] = useState<SessionStats>(() => ({
     answered: 0,
     correct: 0,
@@ -118,6 +141,7 @@ export function useStudySession(mode: StudyMode): StudySession {
     setQueue(next)
     setTotal(next.length)
     setRevealed(false)
+    setStep((n) => n + 1)
     setStats({ answered: 0, correct: 0, again: 0, startedAt: Date.now(), elapsedMs: 0 })
     setExpiresAt(mode === 'speed' ? Date.now() + settings.speedSessionSeconds * 1000 : null)
     setTimeLeftMs(mode === 'speed' ? settings.speedSessionSeconds * 1000 : null)
@@ -146,17 +170,13 @@ export function useStudySession(mode: StudyMode): StudySession {
   useEffect(() => {
     shownAtRef.current = Date.now()
     setRevealed(false)
-  }, [currentId])
+  }, [currentId, step])
 
   const reveal = useCallback(() => setRevealed(true), [])
 
   const advance = useCallback((requeueId?: string) => {
-    setQueue((prev) => {
-      const [, ...rest] = prev
-      if (requeueId === undefined) return rest
-      const at = Math.min(REQUEUE_GAP, rest.length)
-      return [...rest.slice(0, at), requeueId, ...rest.slice(at)]
-    })
+    setStep((n) => n + 1)
+    setQueue((prev) => requeue(prev, requeueId))
   }, [])
 
   const answer = useCallback(
@@ -189,6 +209,7 @@ export function useStudySession(mode: StudyMode): StudySession {
     skip,
     restart,
     finished: !card,
+    step,
     remaining: queue.length,
     total,
     progress: total ? Math.min(1, (total - queue.length) / total) : 0,

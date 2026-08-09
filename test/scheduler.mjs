@@ -36,7 +36,7 @@ await build({
   logLevel: 'error',
 })
 
-const { schedule, isDue, isNew, buildQueue, DAY, MINUTE, RELEARN_MINUTES } = await import(
+const { schedule, isDue, isNew, buildQueue, requeue, DAY, MINUTE, RELEARN_MINUTES } = await import(
   pathToFileURL(OUT).href
 )
 
@@ -143,6 +143,22 @@ const onlyFresh = buildQueue([card({ id: 'f1' }), card({ id: 'f2' })], 'srs', {
   newLeft: 10, reviewsLeft: 10, speedSize: 5,
 })
 check('лише нові — обидві в черзі', onlyFresh.length === 2, onlyFresh.join(','))
+
+console.log('\nПовернення забутої картки в чергу')
+check('оцінка без «Забув» просто знімає картку', requeue(['a', 'b', 'c']).join() === 'b,c')
+check(
+  'забута картка відходить на REQUEUE_GAP назад',
+  requeue(['a', 'b', 'c', 'd', 'e'], 'a').join() === 'b,c,d,a,e',
+)
+check(
+  'у короткій черзі стає в кінець',
+  requeue(['a', 'b', 'c'], 'a').join() === 'b,c,a',
+)
+check('передостання міняється місцями з останньою', requeue(['a', 'b'], 'a').join() === 'b,a')
+// Саме цей випадок ламав кнопку «Забув»: черга не змінюється, тож зміни
+// `currentId` немає — скидати відповідь мусить лічильник показів `step`.
+check('остання забута лишається єдиною в черзі', requeue(['a'], 'a').join() === 'a')
+check('остання відгадана спорожняє чергу', requeue(['a']).length === 0)
 
 console.log(`\n${passed} пройдено, ${failed} провалено`)
 process.exit(failed ? 1 : 0)

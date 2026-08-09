@@ -194,7 +194,9 @@ export function StudyView() {
 
             {mode === 'type' ? (
               <TypeInPanel
-                key={card.id}
+                // Забута остання картка повторюється тим самим id — без кроку
+                // поле вводу лишилось би із попередньою (неправильною) відповіддю.
+                key={`${card.id}:${session.step}`}
                 card={card}
                 revealed={revealed}
                 onReveal={reveal}
