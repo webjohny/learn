@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { AuthDialog } from '@/components/AuthDialog'
 import { DeckDialog } from '@/components/DeckDialog'
@@ -19,6 +20,7 @@ export function AccountMenu() {
   const activeDeckId = useDeck((s) => s.activeDeckId)
   const setActiveDeck = useDeck((s) => s.setActiveDeck)
   const toast = useToast()
+  const navigate = useNavigate()
   const t = useT()
 
   const [open, setOpen] = useState(false)
@@ -108,6 +110,16 @@ export function AccountMenu() {
                 setOpen(false)
               }}
             />
+            {user?.isAdmin && (
+              <MenuItem
+                icon="award"
+                label={t('admin.title')}
+                onClick={() => {
+                  navigate('/admin')
+                  setOpen(false)
+                }}
+              />
+            )}
             <MenuItem
               icon="rotate"
               label={t('account.syncNow')}
@@ -141,7 +153,7 @@ function MenuItem({
   onClick,
   tone = 'default',
 }: {
-  icon: 'plus' | 'rotate' | 'undo'
+  icon: 'plus' | 'rotate' | 'undo' | 'award'
   label: string
   onClick: () => void
   tone?: 'default' | 'danger'

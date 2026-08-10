@@ -6,6 +6,7 @@ import { BottomNav } from '@/components/BottomNav'
 import { ImportDialog } from '@/components/ImportDialog'
 import { useAutoSync } from '@/hooks/useAutoSync'
 import { useTheme } from '@/hooks/useMisc'
+import { AdminView } from '@/views/AdminView'
 import { BrowseView } from '@/views/BrowseView'
 import { QuizEditorView } from '@/views/QuizEditorView'
 import { QuizListView } from '@/views/QuizListView'
@@ -39,6 +40,8 @@ function AppShell() {
           <Route path="/stats" element={<StatsView />} />
           <Route path="/settings" element={<SettingsView onOpenImport={() => setImportOpen(true)} />} />
           <Route path="/quiz" element={<QuizListView />} />
+          {/* Не-адміна екран сам відправить на головну — сервер віддає дані лише адміну. */}
+          <Route path="/admin" element={<AdminView />} />
           <Route path="/quiz/:id/run" element={<QuizRunView />} />
           <Route path="/quiz/:id/edit" element={<QuizEditorView />} />
           {/* Невідомий шлях — на головну, щоб глибокий лінк з друкарською помилкою не давав пустоту. */}

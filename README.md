@@ -13,6 +13,7 @@ npm run test:api # наскрізний smoke-тест API (сервер має 
 ```
 
 Дані сервера — SQLite-файл `data/phrase-deck.sqlite` (шлях змінюється через `DB_PATH`), порт — через `PORT`.
+Адміністратори — через `ADMIN_EMAILS` (пошти через кому); без змінної адмін один: `geryh213921@gmail.com`.
 
 ## Стек
 
@@ -31,8 +32,9 @@ src/
               selectors.ts, useOverlay.ts
   hooks/      useStudySession.ts, useHotkeys.ts, useAutoSync.ts, useMisc.ts
   components/ Flashcard, RatingBar, ClozeText, CardEditor, ImportDialog,
-              AuthDialog, DeckDialog, AccountMenu, AppHeader, BottomNav, ui/
-  views/      StudyView, TypeInPanel, BrowseView, StatsView, SettingsView
+              AuthDialog, DeckDialog, GrantCardsDialog, AccountMenu, AppHeader,
+              BottomNav, ui/
+  views/      StudyView, TypeInPanel, BrowseView, StatsView, SettingsView, AdminView
   data/seed.ts  стартові 94 фрази
 
 server/src/
@@ -40,7 +42,8 @@ server/src/
   auth/       реєстрація, вхід, сесії, AuthGuard, scrypt
   decks/      мовні пари (CRUD, перевірка власника)
   sync/       pull/push із розв'язанням конфліктів
-  test/smoke.mjs  32 наскрізні перевірки API
+  admin/      зведення по акаунтах, AdminGuard, передача карток
+  test/smoke.mjs  наскрізні перевірки API
 ```
 
 ## Акаунти та мовні пари
@@ -67,6 +70,18 @@ server/src/
 | `GET/POST/PATCH/DELETE` | `/api/decks` | мовні пари |
 | `GET` | `/api/sync/:deckId?since=` | зміни після мітки часу |
 | `POST` | `/api/sync/:deckId` | надіслати локальні зміни |
+| `GET` | `/api/admin/overview` · `/users` · `/users/:id` | зведення адмінки (лише для `ADMIN_EMAILS`) |
+| `POST` | `/api/admin/users/:id/cards` | скопіювати картки адміна в колоду користувача |
+
+## Адмінка
+
+Екран `/admin` бачить лише акаунт із пошти в `ADMIN_EMAILS` — ролі в БД немає, `isAdmin` обчислюється з пошти й приїжджає в `/api/auth/me`. Доступ вирішує серверний `AdminGuard`; приховування пункту меню — лише зручність.
+
+Що показує: кількість акаунтів, активних сьогодні / за тиждень, картки, повтори, час практики, графік активності за 14 днів, а по кожному користувачу — колоди з лічильниками «до повтору», активність за 30 днів і останні вікторини.
+
+**Передача карток.** Адмін обирає свою колоду-джерело, картки в ній і колоду отримувача (наявну або нову). Картки саме копіюються: у джерела лишаються, прогрес SM-2 у копій обнуляється, дублі за парою «питання + відповідь» пропускаються. Отримувач побачить їх при найближчій синхронізації.
+
+Наскрізний прогін адмінських сценаріїв: `ADMIN_TEST_EMAIL=... npm run test:api` (пошта має бути в `ADMIN_EMAILS` сервера); без змінної лишаються перевірки заборони доступу.
 
 ## Режими навчання
 

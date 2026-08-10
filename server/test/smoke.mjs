@@ -387,6 +387,122 @@ check(
 const sinceFuture = await alice('GET', `/api/quiz?since=${encodeURIComponent(new Date(Date.now() + 60_000).toISOString())}`)
 check('курсор since фільтрує', sinceFuture.data?.quizzes?.length === 0)
 
+section('Адмінка — доступ')
+const aliceMe = await alice('GET', '/api/auth/me')
+check('звичайний акаунт не адмін', aliceMe.data?.user?.isAdmin === false, JSON.stringify(aliceMe.data?.user?.isAdmin))
+
+const anonAdmin = await createClient()('GET', '/api/admin/overview')
+check('адмінка без сесії → 401', anonAdmin.status === 401, `отримано ${anonAdmin.status}`)
+
+const forbidden = await alice('GET', '/api/admin/overview')
+check('адмінка звичайному → 403', forbidden.status === 403, `отримано ${forbidden.status}`)
+check('403 має код', forbidden.data?.code === 'admin.forbidden', JSON.stringify(forbidden.data?.code))
+
+const forbiddenGrant = await alice('POST', `/api/admin/users/${registered.data.user.id}/cards`, {
+  fromDeckId: enDeck.id,
+  deckId: enDeck.id,
+})
+check('передача карток звичайному → 403', forbiddenGrant.status === 403, `отримано ${forbiddenGrant.status}`)
+
+// Повний прогін адмінських ендпоінтів вимагає акаунта з пошти в ADMIN_EMAILS.
+// Без нього лишаються перевірки заборони вище.
+const ADMIN_EMAIL = process.env.ADMIN_TEST_EMAIL
+const ADMIN_PASSWORD = process.env.ADMIN_TEST_PASSWORD ?? 'supersecret1'
+
+if (!ADMIN_EMAIL) {
+  console.log('  · ADMIN_TEST_EMAIL не задано — адмінські сценарії пропущено')
+} else {
+  section('Адмінка — зведення й передача карток')
+  const admin = createClient()
+  let adminAuth = await admin('POST', '/api/auth/register', {
+    email: ADMIN_EMAIL,
+    password: ADMIN_PASSWORD,
+    displayName: 'Адмін',
+  })
+  // Прогін не перший на цій БД — акаунт уже є.
+  if (adminAuth.status === 409) {
+    adminAuth = await admin('POST', '/api/auth/login', { email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
+  }
+  check('адмін увійшов', adminAuth.status === 200 || adminAuth.status === 201, `отримано ${adminAuth.status}`)
+  check('прапорець isAdmin', adminAuth.data?.user?.isAdmin === true, JSON.stringify(adminAuth.data?.user?.isAdmin))
+
+  const adminDeck = adminAuth.data.decks[0]
+  const overview = await admin('GET', '/api/admin/overview')
+  check('огляд → 200', overview.status === 200, `отримано ${overview.status}`)
+  check('користувачів щонайменше двоє', overview.data?.totals?.users >= 2, JSON.stringify(overview.data?.totals))
+  check('ряд активності на 14 днів', overview.data?.daily?.length === 14, `${overview.data?.daily?.length}`)
+
+  const list = await admin('GET', '/api/admin/users')
+  const aliceRow = list.data?.users?.find((u) => u.id === registered.data.user.id)
+  check('Аліса є в списку', Boolean(aliceRow))
+  check('пароль не витікає', aliceRow && !('passwordHash' in aliceRow) && !('password_hash' in aliceRow))
+  check('картки Аліси враховані', aliceRow?.cards >= 1, `cards=${aliceRow?.cards}`)
+  check('повтори Аліси враховані', aliceRow?.reviews === 10, `reviews=${aliceRow?.reviews}`)
+
+  const detail = await admin('GET', `/api/admin/users/${registered.data.user.id}`)
+  check('картка користувача → 200', detail.status === 200, `отримано ${detail.status}`)
+  check('колоди користувача видно', detail.data?.decks?.some((d) => d.id === enDeck.id))
+  check('денний ряд на 30 днів', detail.data?.daily?.length === 30, `${detail.data?.daily?.length}`)
+
+  const missing = await admin('GET', '/api/admin/users/no-such-user')
+  check('невідомий користувач → 404', missing.status === 404, `отримано ${missing.status}`)
+
+  // Наповнюємо колоду адміна двома картками — саме їх і передаємо.
+  await admin('POST', `/api/sync/${adminDeck.id}`, {
+    cards: [
+      { id: `gift1-${uniq}`, front: 'Дарунок 1', back: 'Gift one', updatedAt: new Date().toISOString() },
+      { id: `gift2-${uniq}`, front: 'Дарунок 2', back: 'Gift two', updatedAt: new Date().toISOString() },
+    ],
+  })
+
+  const grant = await admin('POST', `/api/admin/users/${registered.data.user.id}/cards`, {
+    fromDeckId: adminDeck.id,
+    cardIds: [`gift1-${uniq}`],
+    deckId: enDeck.id,
+  })
+  check('передача → 200', grant.status === 200, JSON.stringify(grant.data))
+  check('додано одну картку', grant.data?.added === 1, JSON.stringify(grant.data))
+
+  const grantAgain = await admin('POST', `/api/admin/users/${registered.data.user.id}/cards`, {
+    fromDeckId: adminDeck.id,
+    cardIds: [`gift1-${uniq}`],
+    deckId: enDeck.id,
+  })
+  check('повтор не дублює', grantAgain.data?.added === 0 && grantAgain.data?.skipped === 1, JSON.stringify(grantAgain.data))
+
+  const alicePull = await alice('GET', `/api/sync/${enDeck.id}`)
+  const gift = alicePull.data.cards.find((c) => c.front === 'Дарунок 1')
+  check('картка дійшла до отримувача', Boolean(gift))
+  check('id копії новий', gift && gift.id !== `gift1-${uniq}`, gift?.id)
+  check('прогрес обнулено', gift?.repetition === 0 && gift?.interval === 0 && gift?.nextReview === null)
+
+  const grantNewDeck = await admin('POST', `/api/admin/users/${registered.data.user.id}/cards`, {
+    fromDeckId: adminDeck.id,
+    newDeckName: `Від адміна ${uniq}`,
+  })
+  check('нова колода створена', grantNewDeck.data?.deck?.name === `Від адміна ${uniq}`, JSON.stringify(grantNewDeck.data?.deck))
+  check('у нову колоду лягли обидві картки', grantNewDeck.data?.added === 2, JSON.stringify(grantNewDeck.data))
+
+  const aliceDecks = await alice('GET', '/api/decks')
+  check(
+    'отримувач бачить нову колоду',
+    aliceDecks.data?.decks?.some((d) => d.id === grantNewDeck.data.deck.id),
+  )
+
+  const foreignDeck = await admin('POST', `/api/admin/users/${registered.data.user.id}/cards`, {
+    fromDeckId: adminDeck.id,
+    deckId: adminDeck.id,
+  })
+  check('чужа для отримувача колода → 404', foreignDeck.status === 404, `отримано ${foreignDeck.status}`)
+
+  const noTarget = await admin('POST', `/api/admin/users/${registered.data.user.id}/cards`, {
+    fromDeckId: adminDeck.id,
+  })
+  check('без колоди-цілі → 400', noTarget.status === 400, `отримано ${noTarget.status}`)
+
+  await admin('POST', '/api/auth/logout')
+}
+
 section('Видалення колод')
 const delLast = await bob('DELETE', `/api/decks/${bobDecks.data.decks[0].id}`)
 check('останню колоду видалити не можна → 400', delLast.status === 400, `отримано ${delLast.status}`)

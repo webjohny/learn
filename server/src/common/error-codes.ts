@@ -9,6 +9,10 @@ export const ERROR_CODES = {
   badCredentials: 'auth.badCredentials',
   deckNotFound: 'deck.notFound',
   deckLastOne: 'deck.lastOne',
+  adminForbidden: 'admin.forbidden',
+  adminUserNotFound: 'admin.userNotFound',
+  adminNoTargetDeck: 'admin.noTargetDeck',
+  adminNoCards: 'admin.noCards',
 } as const
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES]

@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
+import { isAdminEmail } from '../common/admin.js'
 import { ERROR_CODES, withCode } from '../common/error-codes.js'
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common'
 
@@ -41,6 +42,7 @@ export class AuthService {
       email,
       displayName: dto.displayName?.trim() || email.split('@')[0],
       createdAt: nowISO(),
+      isAdmin: isAdminEmail(email),
     }
 
     this.database.run(
@@ -117,6 +119,7 @@ export class AuthService {
       email: row.email,
       displayName: row.display_name,
       createdAt: row.created_at,
+      isAdmin: isAdminEmail(row.email),
     }
   }
 }

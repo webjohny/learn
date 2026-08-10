@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common'
 
+import { AdminController } from './admin/admin.controller.js'
+import { AdminGuard } from './admin/admin.guard.js'
+import { AdminService } from './admin/admin.service.js'
 import { AuthController } from './auth/auth.controller.js'
 import { AuthGuard } from './auth/auth.guard.js'
 import { AuthService } from './auth/auth.service.js'
@@ -14,7 +17,14 @@ import { SyncService } from './sync/sync.service.js'
 
 @Module({
   imports: [DatabaseModule],
-  controllers: [HealthController, AuthController, DecksController, SyncController, QuizController],
-  providers: [AuthService, AuthGuard, DecksService, SyncService, QuizService],
+  controllers: [
+    HealthController,
+    AuthController,
+    DecksController,
+    SyncController,
+    QuizController,
+    AdminController,
+  ],
+  providers: [AuthService, AuthGuard, DecksService, SyncService, QuizService, AdminService, AdminGuard],
 })
 export class AppModule {}

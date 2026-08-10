@@ -1,4 +1,9 @@
 import type {
+  AdminDeckSummary,
+  AdminGrantResult,
+  AdminOverview,
+  AdminUserDetail,
+  AdminUserSummary,
   DeckKind,
   DeckMeta,
   PublicUser,
@@ -9,7 +14,19 @@ import type {
 
 import type { Quiz, QuizRun } from '@/lib/quizTypes'
 
-export type { DeckKind, DeckMeta, PublicUser, SyncCard, SyncDayStat, SyncPullResponse }
+export type {
+  AdminDeckSummary,
+  AdminGrantResult,
+  AdminOverview,
+  AdminUserDetail,
+  AdminUserSummary,
+  DeckKind,
+  DeckMeta,
+  PublicUser,
+  SyncCard,
+  SyncDayStat,
+  SyncPullResponse,
+}
 
 export interface CreateDeckInput {
   name: string
@@ -109,6 +126,28 @@ export const api = {
       `/api/sync/${deckId}`,
       payload,
     ),
+}
+
+export interface GrantCardsInput {
+  /** Колода адміна, з якої копіюємо. */
+  fromDeckId: string
+  /** Порожньо — вся колода. */
+  cardIds?: string[]
+  /** Наявна колода отримувача або, як її немає, назва нової. */
+  deckId?: string
+  newDeckName?: string
+}
+
+/** Панель власника — доступна лише адмінському акаунту (перевіряє сервер). */
+export const adminApi = {
+  overview: () => request<AdminOverview>('GET', '/api/admin/overview'),
+
+  users: () => request<{ users: AdminUserSummary[] }>('GET', '/api/admin/users'),
+
+  user: (id: string) => request<AdminUserDetail>('GET', `/api/admin/users/${id}`),
+
+  grantCards: (userId: string, input: GrantCardsInput) =>
+    request<AdminGrantResult>('POST', `/api/admin/users/${userId}/cards`, input),
 }
 
 /** Окремий контур: вікторини належать акаунту, а не колоді. */
