@@ -108,7 +108,8 @@ export const uk = {
   'study.allDone': 'На сьогодні все повторено 🎉',
   'study.sessionDone': 'Сесію завершено!',
   'study.limitReached': 'Ліміт на сьогодні вичерпано. Можна пройти швидкий спринт для розігріву.',
-  'study.nothingDue': 'Наступні картки з’являться, щойно настане час повторення.',
+  'study.nothingDue':
+    'Наступні картки з’являться, щойно настане час повторення. «Ще раз» прокрутить колоду понад розклад.',
   'study.sessionSummary': '{count} карток за {duration}.',
   'study.metricCards': 'карток',
   'study.metricAccuracy': 'точність',

@@ -110,7 +110,8 @@ export const ru: Record<MessageKey, Message> = {
   'study.allDone': 'На сегодня всё повторено 🎉',
   'study.sessionDone': 'Сессия завершена!',
   'study.limitReached': 'Лимит на сегодня исчерпан. Можно пройти быстрый спринт для разогрева.',
-  'study.nothingDue': 'Следующие карточки появятся, как только настанет время повторения.',
+  'study.nothingDue':
+    'Следующие карточки появятся, как только настанет время повторения. «Ещё раз» прокрутит колоду сверх расписания.',
   'study.sessionSummary': '{count} карточек за {duration}.',
   'study.metricCards': 'карточек',
   'study.metricAccuracy': 'точность',

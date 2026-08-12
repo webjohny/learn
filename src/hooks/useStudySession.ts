@@ -24,7 +24,7 @@ export interface StudySession {
   reveal: () => void
   answer: (grade: Grade) => void
   skip: () => void
-  restart: () => void
+  restart: (options?: RestartOptions) => void
   finished: boolean
   /** Номер показу картки. Зростає навіть коли та сама картка йде поспіль. */
   step: number
@@ -92,6 +92,26 @@ export function buildQueue(
   return merged.slice(0, Math.max(0, limits.reviewsLeft)).map((c) => c.id)
 }
 
+/**
+ * Черга «понад розклад»: усі картки колоди в перемішаному порядку, без огляду
+ * на дати повторень і денні ліміти.
+ *
+ * Потрібна лише для явного «Ще раз» на екрані підсумку: коли все вже повторено,
+ * `buildQueue` віддає порожню чергу (жодна картка не due й не нова), тож кнопка
+ * перезапускала сесію в нікуди. Автоматично цю гілку не вмикаємо — інакше
+ * розклад SM-2 втратив би сенс.
+ *
+ * Експортовано заради регресійних тестів.
+ */
+export function buildRotationQueue(pool: Card[]): string[] {
+  return shuffle(pool.filter((c) => !c.suspended)).map((c) => c.id)
+}
+
+export interface RestartOptions {
+  /** Дозволити ротацію понад розклад, якщо за розкладом нічого не лишилось. */
+  extra?: boolean
+}
+
 export function useStudySession(mode: StudyMode): StudySession {
   const pool = useStudyPool()
   const cards = useCards()
@@ -136,8 +156,10 @@ export function useStudySession(mode: StudyMode): StudySession {
 
   const shownAtRef = useRef(Date.now())
 
-  const restart = useCallback(() => {
-    const next = buildQueue(poolRef.current, mode, limitsRef.current)
+  const restart = useCallback((options?: RestartOptions) => {
+    let next = buildQueue(poolRef.current, mode, limitsRef.current)
+    // Ротацію вмикає лише явний намір користувача — див. buildRotationQueue.
+    if (!next.length && options?.extra) next = buildRotationQueue(poolRef.current)
     setQueue(next)
     setTotal(next.length)
     setRevealed(false)

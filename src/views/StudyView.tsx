@@ -245,7 +245,10 @@ export function StudyView() {
               mode={mode}
               stats={session.stats}
               queued={counts.queued}
-              onRestart={restart}
+              // `extra`: якщо за розкладом уже нічого немає, «Ще раз» крутить
+              // колоду по колу замість того, щоб відкрити порожню сесію.
+              onRestart={() => restart({ extra: true })}
+              canRestart={counts.total > 0}
               onSwitchMode={setMode}
               finished={finished}
               t={t}
@@ -293,6 +296,7 @@ function SessionDone({
   stats,
   queued,
   onRestart,
+  canRestart,
   onSwitchMode,
   finished,
   t,
@@ -301,6 +305,8 @@ function SessionDone({
   stats: { answered: number; correct: number; again: number; elapsedMs: number }
   queued: number
   onRestart: () => void
+  /** У порожній колоді перезапускати нічого — кнопка мовчала б без пояснень. */
+  canRestart: boolean
   onSwitchMode: (mode: StudyMode) => void
   finished: boolean
   t: Translate
@@ -337,7 +343,7 @@ function SessionDone({
       )}
 
       <div className="flex flex-wrap justify-center gap-2">
-        <button className="btn-primary" onClick={onRestart}>
+        <button className="btn-primary disabled:opacity-40" onClick={onRestart} disabled={!canRestart}>
           <Icon name="rotate" size={16} /> {t('study.again')}
         </button>
         {mode !== 'speed' && (

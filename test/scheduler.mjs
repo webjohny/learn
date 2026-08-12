@@ -36,9 +36,9 @@ await build({
   logLevel: 'error',
 })
 
-const { schedule, isDue, isNew, buildQueue, requeue, DAY, MINUTE, RELEARN_MINUTES } = await import(
-  pathToFileURL(OUT).href
-)
+const {
+  schedule, isDue, isNew, buildQueue, buildRotationQueue, requeue, DAY, MINUTE, RELEARN_MINUTES,
+} = await import(pathToFileURL(OUT).href)
 
 let passed = 0
 let failed = 0
@@ -143,6 +143,27 @@ const onlyFresh = buildQueue([card({ id: 'f1' }), card({ id: 'f2' })], 'srs', {
   newLeft: 10, reviewsLeft: 10, speedSize: 5,
 })
 check('лише нові — обидві в черзі', onlyFresh.length === 2, onlyFresh.join(','))
+
+console.log('\nРотація понад розклад («Ще раз», коли все повторено)')
+// Саме цей випадок ламав кнопку: після повного проходу колоди звичайна черга
+// порожня, бо кожна картка має nextReview у майбутньому й жодна не нова.
+// `buildQueue` звіряється з реальним Date.now(), а не з NOW — строки тут
+// відлічуємо від справжнього «зараз», інакше «майбутнє» вже минуло б.
+const ahead = (days) => new Date(Date.now() + days * DAY).toISOString()
+const allDone = [
+  card({ id: 'a', repetition: 3, interval: 5, nextReview: ahead(+2) }),
+  card({ id: 'b', repetition: 1, interval: 1, nextReview: ahead(+1) }),
+  card({ id: 'zzz', repetition: 3, interval: 5, nextReview: ahead(+3), suspended: true }),
+]
+check(
+  'за розкладом справді нічого немає',
+  buildQueue(allDone, 'srs', { newLeft: 10, reviewsLeft: 100, speedSize: 5 }).length === 0,
+)
+const rotated = buildRotationQueue(allDone)
+check('ротація бере всі невідкладені картки', rotated.length === 2, rotated.join(','))
+check('ротація не бере призупинених', !rotated.includes('zzz'))
+check('ротація ігнорує майбутні строки', rotated.includes('a') && rotated.includes('b'))
+check('порожня колода дає порожню ротацію', buildRotationQueue([]).length === 0)
 
 console.log('\nПовернення забутої картки в чергу')
 check('оцінка без «Забув» просто знімає картку', requeue(['a', 'b', 'c']).join() === 'b,c')
