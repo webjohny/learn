@@ -41,6 +41,8 @@ const paths = {
   user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
   cloud: 'M18 18H7a5 5 0 1 1 .7-9.95A6 6 0 1 1 18 18z',
   globe: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z',
+  shuffle: 'M16 3h5v5M3 20 21 4M16 21h5v-5M15 15l6 6M3 4l5 5',
+  list: 'M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01',
 } as const
 
 export type IconName = keyof typeof paths

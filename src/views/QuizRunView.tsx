@@ -4,9 +4,13 @@ import { Link, useParams } from 'react-router-dom'
 import { Icon } from '@/components/ui/Icon'
 import { useT, type Translate } from '@/lib/i18n'
 import { isCorrectSelection, type Quiz, type QuizQuestion } from '@/lib/quizTypes'
+import { shuffle } from '@/lib/text'
 import { useQuizzes } from '@/store/useQuizzes'
 
-type Phase = 'question' | 'feedback' | 'done'
+type Phase = 'intro' | 'question' | 'feedback' | 'done'
+
+/** 'config' — порядок питань такий, як у самій вікторині. */
+type QuestionOrder = 'config' | 'random'
 
 interface Answered {
   question: QuizQuestion
@@ -21,17 +25,31 @@ export function QuizRunView() {
   const t = useT()
 
   const [index, setIndex] = useState(0)
-  const [phase, setPhase] = useState<Phase>('question')
+  const [phase, setPhase] = useState<Phase>('intro')
   const [selected, setSelected] = useState<string[]>([])
   const [answers, setAnswers] = useState<Answered[]>([])
   const [error, setError] = useState<string | null>(null)
+  // Порядок фіксуємо на старті прогону: перемішувати на кожному рендері
+  // означало б тасувати питання просто від зміни стану.
+  const [questions, setQuestions] = useState<QuizQuestion[]>([])
 
-  const question = quiz?.questions[index]
-  const total = quiz?.questions.length ?? 0
+  const question = questions[index]
+  const total = questions.length
   const score = answers.filter((a) => a.correct).length
 
   if (!quiz) return <Missing t={t} />
-  if (!total) return <Missing empty quizId={quiz.id} t={t} />
+  if (!quiz.questions.length) return <Missing empty quizId={quiz.id} t={t} />
+
+  const start = (order: QuestionOrder) => {
+    setQuestions(order === 'random' ? shuffle(quiz.questions) : quiz.questions)
+    setIndex(0)
+    setSelected([])
+    setAnswers([])
+    setError(null)
+    setPhase('question')
+  }
+
+  if (phase === 'intro') return <Intro quiz={quiz} onStart={start} t={t} />
 
   const submit = () => {
     if (!question) return
@@ -72,13 +90,8 @@ export function QuizRunView() {
     setPhase('question')
   }
 
-  const restart = () => {
-    setIndex(0)
-    setSelected([])
-    setAnswers([])
-    setError(null)
-    setPhase('question')
-  }
+  // «Ще раз» повертає до вибору порядку — це теж новий запуск вікторини.
+  const restart = () => setPhase('intro')
 
   if (phase === 'done') {
     return <Summary quiz={quiz} answers={answers} score={score} total={total} onRestart={restart} t={t} />
@@ -223,6 +236,79 @@ export function QuizRunView() {
             <Icon name="check" size={16} /> {t('quiz.run.answer')}
           </button>
         )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Екран запуску. Показується перед кожним прогоном — зокрема й після «Ще раз»,
+ * щоб порядок питань можна було змінити, не виходячи до переліку.
+ */
+function Intro({
+  quiz,
+  onStart,
+  t,
+}: {
+  quiz: Quiz
+  onStart: (order: QuestionOrder) => void
+  t: Translate
+}) {
+  const options: { order: QuestionOrder; icon: 'list' | 'shuffle'; label: string; hint: string }[] = [
+    {
+      order: 'config',
+      icon: 'list',
+      label: t('quiz.run.orderConfig'),
+      hint: t('quiz.run.orderConfigHint'),
+    },
+    {
+      order: 'random',
+      icon: 'shuffle',
+      label: t('quiz.run.orderRandom'),
+      hint: t('quiz.run.orderRandomHint'),
+    },
+  ]
+
+  return (
+    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-2">
+      <div className="surface space-y-5 p-6">
+        <div className="space-y-1.5 text-center">
+          <h2 className="text-xl font-semibold">{quiz.title}</h2>
+          <p className="flex flex-wrap items-center justify-center gap-2 text-[12px] text-ink-400">
+            <span className="chip">
+              {quiz.mode === 'graded' ? t('quiz.list.graded') : t('quiz.list.survey')}
+            </span>
+            <span>{t('quiz.list.questions', { count: quiz.questions.length })}</span>
+          </p>
+        </div>
+
+        <p className="text-center text-[13px] text-ink-500 dark:text-ink-400">
+          {t('quiz.run.startHint')}
+        </p>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          {options.map((option) => (
+            <button
+              key={option.order}
+              onClick={() => onStart(option.order)}
+              className="flex items-center gap-3 rounded-xl border border-ink-200 p-3.5 text-left transition-colors hover:bg-ink-900/4 dark:border-white/10 dark:hover:bg-white/6"
+            >
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-500/12 text-brand-600 dark:text-brand-400">
+                <Icon name={option.icon} size={17} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[14px] font-semibold">{option.label}</span>
+                <span className="block text-[11.5px] text-ink-400">{option.hint}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex justify-center">
+        <Link to="/quiz" className="btn-soft">
+          <Icon name="layers" size={16} /> {t('quiz.run.toList')}
+        </Link>
       </div>
     </div>
   )

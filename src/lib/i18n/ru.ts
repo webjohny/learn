@@ -337,6 +337,11 @@ export const ru: Record<MessageKey, Message> = {
   'quiz.import.done': 'Викторина импортирована',
   'quiz.import.doneMany': 'Импортировано {count} викторин',
 
+  'quiz.run.startHint': 'В каком порядке показывать вопросы?',
+  'quiz.run.orderConfig': 'Как в викторине',
+  'quiz.run.orderConfigHint': 'Порядок из настроек викторины',
+  'quiz.run.orderRandom': 'Случайный порядок',
+  'quiz.run.orderRandomHint': 'Вопросы перемешиваются каждый раз',
   'quiz.run.multipleHint': 'Можно выбрать несколько вариантов',
   'quiz.run.pickAnswer': 'Выберите ответ.',
   'quiz.run.answer': 'Ответить',

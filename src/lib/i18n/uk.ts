@@ -326,6 +326,11 @@ export const uk = {
   'quiz.import.done': 'Вікторину імпортовано',
   'quiz.import.doneMany': 'Імпортовано {count} вікторин',
 
+  'quiz.run.startHint': 'У якому порядку показувати питання?',
+  'quiz.run.orderConfig': 'Як у вікторині',
+  'quiz.run.orderConfigHint': 'Порядок із налаштувань вікторини',
+  'quiz.run.orderRandom': 'Випадковий порядок',
+  'quiz.run.orderRandomHint': 'Питання перемішуються щоразу',
   'quiz.run.multipleHint': 'Можна обрати кілька варіантів',
   'quiz.run.pickAnswer': 'Оберіть відповідь.',
   'quiz.run.answer': 'Відповісти',
